@@ -1,0 +1,21 @@
+[submodule "src/main/scala/Plugins/CommonUtils"]
+	path = src/main/scala/Plugins/CommonUtils
+	url = http://gitlab.qianfang.space:2000/qianfang/plugins/commonutils.git
+[submodule "src/main/scala/Plugins/MSUtils"]
+	path = src/main/scala/Plugins/MSUtils
+	url = http://gitlab.qianfang.space:2000/qianfang/plugins/msutils.git
+[submodule "src/main/scala/Plugins/UserAccountAPI"]
+	path = src/main/scala/Plugins/UserAccountAPI
+	url = http://gitlab.qianfang.space:2000/qianfang/plugins/api/useraccountapi.git
+[submodule "src/main/scala/Plugins/ConsiliaAPI"]
+	path = src/main/scala/Plugins/ConsiliaAPI
+	url = http://gitlab.qianfang.space:2000/qianfang/plugins/api/consiliaapi.git
+[submodule "src/main/scala/Plugins/ConsiliaShared"]
+	path = src/main/scala/Plugins/ConsiliaShared
+	url = http://gitlab.qianfang.space:2000/qianfang/plugins/sharedobjects/consiliashared.git
+[submodule "src/main/scala/Plugins/EngineShared"]
+	path = src/main/scala/Plugins/EngineShared
+	url = http://gitlab.qianfang.space:2000/qianfang/plugins/sharedobjects/engineshared.git
+[submodule "src/main/scala/Plugins/DiagnosisOracleAPI"]
+	path = src/main/scala/Plugins/DiagnosisOracleAPI
+	url = http://gitlab.qianfang.space:2000/qianfang/plugins/api/diagnosisOracleapi.git
