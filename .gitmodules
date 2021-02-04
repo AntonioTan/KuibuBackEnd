@@ -1,12 +1,12 @@
 [submodule "src/main/scala/Plugins/CommonUtils"]
 	path = src/main/scala/Plugins/CommonUtils
-	url = http://gitlab.qianfang.space:2000/qianfang/plugins/commonutils.git
+	url = http://gitlab.qianfang.space:2000/qianfang/plugins/CommonUtils.git
 [submodule "src/main/scala/Plugins/MSUtils"]
 	path = src/main/scala/Plugins/MSUtils
-	url = http://gitlab.qianfang.space:2000/qianfang/plugins/msutils.git
+	url = http://gitlab.qianfang.space:2000/qianfang/plugins/MSUtils.git
 [submodule "src/main/scala/Plugins/UserAccountAPI"]
 	path = src/main/scala/Plugins/UserAccountAPI
-	url = http://gitlab.qianfang.space:2000/qianfang/plugins/api/useraccountapi.git
+	url = http://gitlab.qianfang.space:2000/qianfang/plugins/api/UserAccountAPI.git
 [submodule "src/main/scala/Plugins/ConsiliaAPI"]
 	path = src/main/scala/Plugins/ConsiliaAPI
 	url = http://gitlab.qianfang.space:2000/qianfang/plugins/api/consiliaapi.git
@@ -19,3 +19,18 @@
 [submodule "src/main/scala/Plugins/DiagnosisOracleAPI"]
 	path = src/main/scala/Plugins/DiagnosisOracleAPI
 	url = http://gitlab.qianfang.space:2000/qianfang/plugins/api/diagnosisOracleapi.git
+[submodule "src/main/scala/Plugins/CloudSourcingAPI"]
+	path = src/main/scala/Plugins/CloudSourcingAPI
+	url = http://gitlab.qianfang.space:2000/qianfang/plugins/api/CloudSourcingAPI.git
+[submodule "src/main/scala/Plugins/OCRAPI"]
+	path = src/main/scala/Plugins/OCRAPI
+	url = http://gitlab.qianfang.space:2000/qianfang/plugins/api/OCRAPI.git
+[submodule "src/main/scala/Plugins/CloudSourcingShared"]
+	path = src/main/scala/Plugins/CloudSourcingShared
+	url = http://gitlab.qianfang.space:2000/qianfang/plugins/sharedobjects/cloudsourcingshared.git
+[submodule "src/main/scala/Plugins/EngineOperationAPI"]
+	path = src/main/scala/Plugins/EngineOperationAPI
+	url = http://gitlab.qianfang.space:2000/qianfang/plugins/api/engineoperationapi.git
+[submodule "src/main/scala/Plugins/Encryption"]
+	path = src/main/scala/Plugins/Encryption
+	url = http://gitlab.qianfang.space:2000/qianfang/plugins/encryption.git
