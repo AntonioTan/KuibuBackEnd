@@ -2,7 +2,7 @@
 
 clone 到 本地后请执行如下命令：
 
-```git
+```bash
 git submodule update --init
 ```
 
