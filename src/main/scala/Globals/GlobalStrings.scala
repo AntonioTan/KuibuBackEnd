@@ -1,5 +1,6 @@
 package Globals
 
+import Plugins.CloudSourcingShared.Questions.{bookCutQuestionType, sentenceQuestionType}
 import Plugins.CommonUtils.Hub.ServiceCenter.displayPortalCode
 import Plugins.CommonUtils.StringUtils
 
@@ -11,4 +12,5 @@ object GlobalStrings {
   val workingDir: String =System.getProperty("user.dir")
   /** 放treeObject的文件夹位置 */
   val treeObjectFolder : String = workingDir + StringUtils.slash + "tree-object" + StringUtils.slash
+  val questionTypeNames=List(bookCutQuestionType, sentenceQuestionType)
 }
