@@ -1,19 +1,28 @@
 package Impl
 
 
+import Globals.{GlobalIOs, GlobalStrings, GlobalVariables}
 import Impl.Messages.{BookImageMessage, GetAvailableBookCutQuestionPageListMessage}
 import Message.fromObject
+import Plugins.CommonUtils.CommonExceptions.{ConnectionFailedException, ExceptionWithMessage}
 import Plugins.CommonUtils.CommonTypes.{JacksonSerializable, ReplyMessage}
 import Plugins.CommonUtils.Hub.{ServiceCenter, ServiceType}
 import Plugins.CommonUtils.IOUtils
+import Plugins.Encryption.Combine
 import Tables.UserMessageTable
-import akka.http.scaladsl.model.HttpResponse
+import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
 import com.fasterxml.jackson.annotation.{JsonSubTypes, JsonTypeInfo}
 
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Promise}
+import scala.concurrent.{Await, ExecutionContextExecutor, Future, Promise}
 import scala.util.{Failure, Success, Try}
 import Utils.LocalUtils
+import akka.actor.ActorSystem
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.HttpMethods.POST
+import akka.http.scaladsl.unmarshalling.Unmarshal
+
+import scala.swing.Dialog
 
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
@@ -60,6 +69,8 @@ abstract class DisplayPortalMessage(val sender: ServiceType = ServiceCenter.serv
     fulfillPromise(promise)
     Await.result(result, Duration.create(10, scala.concurrent.duration.SECONDS))
   }
+
+
 }
 
 

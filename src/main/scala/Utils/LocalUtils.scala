@@ -1,17 +1,18 @@
 package Utils
 import java.io.File
 
-import Impl.DisplayPortalMessage
-import _root_.Message.fromObject
+import Impl.{DisplayPortalMessage, DisplayToEngine}
 import Plugins.CommonUtils.CommonExceptions.{ExceptionWithCode, MessageException}
 import Plugins.CommonUtils.CommonTypes.ReplyMessage
 import Plugins.CommonUtils.StringUtils
 import Plugins.EngineOperationAPI.AkkaEngineOperationMessages.{AkkaEngineOperationMessage, UpdateTreeObjectMessage}
 import Plugins.EngineOperationAPI.EngineObjectGlobals.IDMap
 import Plugins.EngineOperationAPI.ObjectClass.Medicine
+import Plugins.EngineOperationAPI.TreeObjectAdmins.UpdateTreeObjectAdminVersionMessage
 import Plugins.EngineShared.EnumTypes.MedicineName
 import Plugins.EngineShared.PropertyItem.{BasicItem, ClaimItem, MedicineItem}
 import Plugins.EngineShared.StringObject.CandidateObjectTrait
+import _root_.Message.fromObject
 import akka.http.scaladsl.model.HttpResponse
 
 import scala.swing.Dialog
@@ -81,7 +82,12 @@ object LocalUtils {
   /** 发送一个新的operation到engine */
   def send(message: AkkaEngineOperationMessage): Option[String]= {
     /** 如果是实习状态，是不能发送更新操作的 */
-    None
+    message match {
+      case _: UpdateTreeObjectMessage => None
+      case _: UpdateTreeObjectAdminVersionMessage => None
+      case _  =>
+        DisplayToEngine.send(message)
+    }
   }
 
   def updateActions():Unit={
