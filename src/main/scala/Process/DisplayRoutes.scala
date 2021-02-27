@@ -18,6 +18,7 @@ class DisplayRoutes()(implicit val system: ActorSystem[_]) {
           pathEnd {
             post {
               entity(as[String]) { bytes =>
+                println("$ display got a post: " + bytes)
                 IOUtils.deserialize[DisplayPortalMessage](bytes) match {
                   case Success(message) =>
                     message.processResult() match {

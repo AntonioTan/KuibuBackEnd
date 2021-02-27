@@ -1,7 +1,7 @@
 package Impl.Messages
 
 import Exceptions.FrequentLoginException
-import Globals.GlobalRules
+import Globals.{GlobalIOs, GlobalRules}
 import Impl.DisplayPortalMessage
 import Plugins.MSUtils.{API, MailSender}
 import Plugins.UserAccountAPI.GetInfoMessages.GetUserIDByTokenMessage
@@ -12,7 +12,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 
 import scala.util.{Failure, Success, Try}
 
-abstract class TokenMessage(val userToken: String) extends DisplayPortalMessage {
+abstract class TokenMessage(val userToken: String = GlobalIOs.userToken) extends DisplayPortalMessage {
   @JsonIgnore
   var userID:String=""
   override def processResult(): Try[HttpResponse] = Try{

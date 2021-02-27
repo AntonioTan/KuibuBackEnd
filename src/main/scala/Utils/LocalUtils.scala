@@ -1,6 +1,7 @@
 package Utils
 import java.io.File
 
+import Globals.{GlobalRules, GlobalVariables}
 import Impl.{DisplayPortalMessage, DisplayToEngine}
 import Plugins.CommonUtils.CommonExceptions.{ExceptionWithCode, MessageException}
 import Plugins.CommonUtils.CommonTypes.ReplyMessage
@@ -93,5 +94,21 @@ object LocalUtils {
   def updateActions():Unit={
   }
   def timeOutAction():Unit={
+  }
+
+  def updateReplyMessageToken(message:ReplyMessage):ReplyMessage={
+    if (message.info.contains(",")){
+      ReplyMessage(message.status,
+        message.info.split(",").map{st=>
+          LocalUtils.updateLocalToken(st.split("-").head)+ st.substring(st.indexOf("-"))
+        }.reduce(_+","+_))
+    } else
+      ReplyMessage(message.status, LocalUtils.updateLocalToken(message.info))
+  }
+  def updateLocalToken(userToken:String):String={
+    var newToken = StringUtils.randomString(GlobalRules.tokenLength)
+    while (GlobalVariables.tokenUserMap.contains(newToken)) newToken = StringUtils.randomString(GlobalRules.tokenLength)
+    GlobalVariables.tokenUserMap=GlobalVariables.tokenUserMap++Map(newToken-> userToken)
+    newToken
   }
 }

@@ -3,6 +3,7 @@ package Impl
 
 import Globals.{GlobalIOs, GlobalStrings, GlobalVariables}
 import Impl.Messages.{BookImageMessage, GetAvailableBookCutQuestionPageListMessage}
+import Impl.WebAccountMessages.{WebCheckTokenMessage, WebGetCurrentUserMessage, WebLoginMessage}
 import Message.fromObject
 import Plugins.CommonUtils.CommonExceptions.{ConnectionFailedException, ExceptionWithMessage}
 import Plugins.CommonUtils.CommonTypes.{JacksonSerializable, ReplyMessage}
@@ -30,8 +31,9 @@ import scala.swing.Dialog
   Array(
     new JsonSubTypes.Type(value = classOf[BookImageMessage], name = "BookImageMessage"),
     new JsonSubTypes.Type(value = classOf[GetAvailableBookCutQuestionPageListMessage], name = "GetAvailableBookCutQuestionPageListMessage"),
-
-
+    new JsonSubTypes.Type(value = classOf[WebLoginMessage], name = "WebLoginMessage"),
+    new JsonSubTypes.Type(value = classOf[WebGetCurrentUserMessage], name = "WebGetCurrentUserMessage"),
+    new JsonSubTypes.Type(value = classOf[WebCheckTokenMessage], name = "WebCheckTokenMessage"),
   ))
 abstract class DisplayPortalMessage(val sender: ServiceType = ServiceCenter.serviceType) extends JacksonSerializable{
 

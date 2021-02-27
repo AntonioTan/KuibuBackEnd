@@ -10,4 +10,6 @@ object GlobalRules {
   /** 同一个nodeType的最大答题框数，超过会提示 */
   val maxAnswersPerNodeType: Int = 8
   val maximumDailyRequest: Int = 1
+
+  val tokenLength=50
 }

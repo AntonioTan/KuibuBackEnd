@@ -54,4 +54,5 @@ object GlobalVariables {
   /** 判断当前选中的问题库是不是空了 */
   def selectedRunOutQuestion:Boolean=runOutQuestions(selectedQuestionTypeName)
 
+  var tokenUserMap:Map[String, String] = Map()
 }
