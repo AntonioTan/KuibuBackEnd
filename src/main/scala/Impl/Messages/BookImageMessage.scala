@@ -5,19 +5,19 @@ import java.io.ByteArrayInputStream
 import Impl.DisplayPortalMessage
 import Plugins.CloudSourcingAPI.AnswerMessages.GetCorrectAnswerMessage
 import Plugins.CloudSourcingAPI.DisplayMessages.{CheckCorrectAnswerMessage, GetQuestionInfoByIDMessage, GetQuestionsByPageMessage}
-import Plugins.CloudSourcingAPI.QuestionMessages.{GetQuestionByIDMessage, GetSubQuestionsByQuestionIDMessage}
+import Plugins.CloudSourcingAPI.QuestionMessages.GetSubQuestionsByQuestionIDMessage
 import Plugins.CloudSourcingShared.Answers.Answer
 import Plugins.CloudSourcingShared.Answers.BookAnswers.SentenceSubAnswer
 import Plugins.CloudSourcingShared.Infos.{AnswerRowClient, AnswerRowList, QuestionList}
 import Plugins.CloudSourcingShared.Questions.{Question, SentenceQuestion, bookCutQuestionType, sentenceQuestionType}
 import Plugins.CommonUtils.CommonTypes.ReplyMessage
 import Plugins.CommonUtils.IOUtils
+import Plugins.EngineOperationAPI.EngineObjectGlobals
 import Plugins.EngineOperationAPI.EngineObjectGlobals.IDMap
-import Plugins.EngineShared.{InfoCollectionID, QuestionID}
+import Plugins.EngineShared.InfoCollectionID
 import Plugins.MSUtils.API
 import Plugins.OCRAPI.{GetImageMessage, GetJsonInfoMessage, OCRInfoMessage}
 import Plugins.UserAccountAPI.GetInfoWithUserIDMessages.GetRealNameWithUserIDMessage
-import Utils.LocalUtils.printCandidateObjectTrait
 import javax.imageio.ImageIO
 import org.apache.commons.codec.binary.Base64
 import org.joda.time.DateTime
@@ -27,7 +27,7 @@ import scala.util.Try
 case class BookImageMessage(bookID: Int, page: Int) extends DisplayPortalMessage {
   def formatSentenceAnswer(ans: SentenceSubAnswer): List[Object] = {
     ans.nodeType +: ans.info.map(t => List(IDMap(t.targetID.v).getActualName) ++ t.translate.map(a => {
-      printCandidateObjectTrait(a)
+      EngineObjectGlobals.printCandidateObjectTrait(a)
     })
     )
   }

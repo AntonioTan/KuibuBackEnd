@@ -1,4 +1,4 @@
-package Impl.WebAccountMessages
+package Impl.Messages
 
 import Impl.DisplayPortalMessage
 import Plugins.CommonUtils.CommonTypes.ReplyMessage

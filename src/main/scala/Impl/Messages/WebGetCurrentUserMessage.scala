@@ -1,4 +1,4 @@
-package Impl.WebAccountMessages
+package Impl.Messages
 
 import Exceptions.UserNotExistedException
 import Globals.GlobalVariables
@@ -18,7 +18,7 @@ import scala.util.Try
  * [描述]获取当前用户信息
  * [返回值] token String
  */
-case class WebGetCurrentUserMessage(userToken: String) extends DisplayPortalMessage {
+case class WebGetCurrentUserMessage() extends TokenMessage{
   override def reaction(): Try[ReplyMessage] = Try{
     val userID = GlobalVariables.tokenUserMap.getOrElse(userToken, throw UserNotExistedException())
     val realName = API.request[GetRealNameMessage](userID).get

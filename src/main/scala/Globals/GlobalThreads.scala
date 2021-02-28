@@ -1,10 +1,10 @@
 package Globals
 
-import Impl.DisplayToEngine
 import Plugins.CloudSourcingAPI.CloudSourcingAPIMain
 import Plugins.MSUtils.AkkaBase.AkkaUtils
 import Plugins.OCRAPI.OCRAPIMain
 import Plugins.UserAccountAPI.UserAccountAPIMain
+import Process.DisplayToEngine
 
 object GlobalThreads {
   /** 注册插件 */

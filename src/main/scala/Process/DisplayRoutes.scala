@@ -1,8 +1,9 @@
 package Process
 
-import Impl.DisplayPortalMessage
-import Plugins.CommonUtils.IOUtils
-import Plugins.MSUtils.MailSender
+import Impl.{DisplayPortalMessage, fromObject}
+import Plugins.CommonUtils.CommonExceptions.{ExceptionWithCode, MessageException}
+import Plugins.CommonUtils.CommonTypes.ReplyMessage
+import Plugins.CommonUtils.{IOUtils, StringUtils}
 import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import akka.http.scaladsl.server.Directives.{as, complete, concat, entity, pathEnd, pathPrefix, post, _}
@@ -19,21 +20,28 @@ class DisplayRoutes()(implicit val system: ActorSystem[_]) {
             post {
               entity(as[String]) { bytes =>
                 println("$ display got a post: " + bytes)
-                IOUtils.deserialize[DisplayPortalMessage](bytes) match {
-                  case Success(message) =>
-                    message.processResult() match {
-                      case Success(value) => complete(value)
-                      case Failure(exception) =>
-                        MailSender.emailException(exception)
-                        complete(HttpResponse(status = StatusCodes.BadRequest))
-                    }
-                  case Failure(exception) =>
-                    exception.printStackTrace()
-                    println("解码失败!!!")
+                try{
+                  val message=IOUtils.deserialize[DisplayPortalMessage](bytes).get
+                  message.processResult() match {
+                    case Success(value) =>
+                      message.addMessage(returnMessage="成功", successful = true).get
+                      complete(fromObject(success = true, value))
+                    case Failure(exception:MessageException)=>
+                      message.addMessage(exception.message, successful = false).get
+                      complete(fromObject(success = true, ReplyMessage(-1, exception.message)))
+                    case Failure(exception:ExceptionWithCode)=>
+                      message.addMessage(exception.code, successful = false).get
+                      complete(fromObject(success = true, ReplyMessage(-2, exception.getMessage)))
+                    case Failure(exception: Throwable)=>
+                      message.addMessage(StringUtils.exceptionToString(exception), successful = false).get
+                      complete(fromObject(success = true, StringUtils.exceptionToReplyCode(exception)))
+                  }
+                } catch {
+                  case e:Throwable=>
+                    e.printStackTrace()
                     complete(HttpResponse(status = StatusCodes.BadRequest))
                 }
               }
-
             }
           }
         }
