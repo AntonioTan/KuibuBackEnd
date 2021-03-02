@@ -5,6 +5,7 @@ import Plugins.EngineOperationAPI.TreeObjectSyncClient
 import Plugins.MSUtils.AkkaBase.AkkaUtils
 import Plugins.MSUtils.AkkaBase.AkkaUtils.clusterSystem
 import Plugins.MSUtils.MailSender
+import Utils.DBUtils
 import akka.actor.typed.ActorSystem
 
 /** 程序入口 */
@@ -12,6 +13,8 @@ object PluginCenterEntrance {
   def main(args: Array[String]): Unit = try {
     println("=== master version (display) ===")
     println("setting up", clusterSystem)
+
+    DBUtils.initDatabase()
 
     Thread.sleep(10000)
     GlobalVariables.akkaSyncClient = ActorSystem(TreeObjectSyncClient(), "syncClient")

@@ -10,7 +10,7 @@ import Plugins.EngineOperationAPI.TreeObjectUpdate.TreeObjectAnswerMessage
 import Plugins.MSUtils.AkkaBase.AkkaUtils
 import Plugins.MSUtils.{API, MailSender, ServiceUtils}
 import Process.{DisplayHttpServer, DisplayRoutes}
-import Utils.LocalUtils
+import Utils.{DBUtils, LocalUtils}
 import akka.actor.typed.ActorSystem
 
 
@@ -31,10 +31,10 @@ case class LocalTestPath() extends UserPath {
     ("222.128.10.132", 2003)
 
     /** 内网测试版server端口 (30071 <=> 3071) */
-    ("192.168.50.232", 30071)
+//    ("192.168.50.232", 30071)
 
     /** 本地版server端口 */
-    ("localhost", 6070)
+//    ("localhost", 6070)
   }
 
 }
@@ -42,9 +42,12 @@ object LocalTest {
   def main(args: Array[String]): Unit = try {
     println("=== Local Test version ===")
     println("version: " + ServiceUtils.getVersionInfo())
+
     UserPath.chosenPath=LocalTestPath()
-    // pass source around for materialization
     println("setting up", AkkaUtils.clusterSystem)
+
+    DBUtils.initDatabase()
+
     Thread.sleep(10000)
     GlobalVariables.akkaSyncClient = ActorSystem(TreeObjectSyncClient(), "syncClient")
     DisplayHttpServer.startHttpServer(new DisplayRoutes()(AkkaUtils.clusterSystem).displayRoutes, AkkaUtils.clusterSystem)

@@ -35,7 +35,7 @@ object UserMessageTable {
     /** remove token，因为token没啥用 */
     m match {
       case _: TokenMessage =>
-        val st: String = compact(render(parse(IOUtils.serialize(m).get) merge JObject(("token", JString("")))))
+        val st: String = compact(render(parse(IOUtils.serialize(m).get) merge JObject(("userToken", JString("")))))
         val m2 = IOUtils.deserialize[DisplayPortalMessage](st).get
         ServiceUtils.exec(userMessageTable += UserMessageRow(m2, DateTime.now, userID, returnMessage, successful))
       case _ => ServiceUtils.exec(userMessageTable += UserMessageRow(m, DateTime.now, userID, returnMessage, successful))

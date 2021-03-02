@@ -1,7 +1,7 @@
 package Impl.Messages
 
-import Exceptions.FrequentLoginException
-import Globals.{GlobalIOs, GlobalRules}
+import Exceptions.{FrequentLoginException, UserNotExistedException}
+import Globals.{GlobalIOs, GlobalRules, GlobalVariables}
 import Impl.DisplayPortalMessage
 import Plugins.CommonUtils.CommonTypes.ReplyMessage
 import Plugins.MSUtils.{API, MailSender}
@@ -15,7 +15,7 @@ abstract class TokenMessage(val userToken: String = GlobalIOs.userToken) extends
   @JsonIgnore
   var userID:String=""
   override def processResult(): Try[ReplyMessage] = Try{
-    userID=API.request[GetUserIDByTokenMessage](userToken).get
+    userID=GlobalVariables.tokenUserMap.getOrElse(userToken, throw UserNotExistedException())
     if (UserMessageTable.countUserIDLoginRecord(userID).get>GlobalRules.maximumDailyRequest)
       MailSender.emailWarning(throw FrequentLoginException())
     reaction().get
