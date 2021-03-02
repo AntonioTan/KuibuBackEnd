@@ -13,7 +13,5 @@ object GlobalVariables {
   var tokenUserMap:Map[String, String] = Map()
   val watcherKey: ServiceKey[AkkaClusterMessage] =AkkaBase.qianFangEngineDisplayWatcherKey
 
-  lazy val syncActorSet: Set[ActorRef[String]] = Set(
-    ActorSystem(TreeObjectClusterSync.apply(), "clusterSync")
-  )
+  lazy val syncActorSet: Set[ActorRef[String]] = Set(ActorSystem(TreeObjectClusterSync.apply(), "clusterSync"))
 }

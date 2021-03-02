@@ -11,7 +11,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 
 import scala.util.Try
 
-abstract class TokenMessage(val userToken: String = GlobalIOs.userToken) extends DisplayPortalMessage {
+abstract class TokenMessage(val userToken: String ) extends DisplayPortalMessage {
   @JsonIgnore
   var userID:String=""
   override def processResult(): Try[ReplyMessage] = Try{

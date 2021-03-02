@@ -15,7 +15,7 @@ import scala.util.Try
  * [描述]获取当前用户信息
  * [返回值] token String
  */
-case class WebGetCurrentUserMessage(override val userToken: String) extends TokenMessage {
+case class WebGetCurrentUserMessage(override val userToken: String) extends TokenMessage(userToken ) {
   override def reaction(): Try[ReplyMessage] = Try {
     val userID = GlobalVariables.tokenUserMap.getOrElse(userToken, throw UserNotExistedException())
     val realName = API.request[GetRealNameMessage](userID).get
