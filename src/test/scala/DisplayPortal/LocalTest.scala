@@ -48,7 +48,7 @@ object LocalTest {
 
     DBUtils.initDatabase()
 
-    Thread.sleep(10000)
+    Thread.sleep(1000)
     GlobalVariables.akkaSyncClient = ActorSystem(TreeObjectSyncClient(), "syncClient")
     DisplayHttpServer.startHttpServer(new DisplayRoutes()(AkkaUtils.clusterSystem).displayRoutes, AkkaUtils.clusterSystem)
   } catch {
