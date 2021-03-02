@@ -1,12 +1,9 @@
 package Process
 
-import Globals.GlobalVariables
-import Plugins.EngineOperationAPI.TreeObjectSyncClient
 import Plugins.MSUtils.AkkaBase.AkkaUtils
 import Plugins.MSUtils.AkkaBase.AkkaUtils.clusterSystem
 import Plugins.MSUtils.MailSender
 import Utils.DBUtils
-import akka.actor.typed.ActorSystem
 
 /** 程序入口 */
 object PluginCenterEntrance {
@@ -16,8 +13,8 @@ object PluginCenterEntrance {
 
     DBUtils.initDatabase()
 
+
     Thread.sleep(10000)
-    GlobalVariables.akkaSyncClient = ActorSystem(TreeObjectSyncClient(), "syncClient")
     DisplayHttpServer.startHttpServer(new DisplayRoutes()(AkkaUtils.clusterSystem).displayRoutes, AkkaUtils.clusterSystem)
 
   } catch {

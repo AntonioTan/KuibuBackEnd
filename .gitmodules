@@ -34,3 +34,6 @@
 [submodule "src/main/scala/Plugins/Encryption"]
 	path = src/main/scala/Plugins/Encryption
 	url = http://gitlab.qianfang.space:2000/qianfang/plugins/encryption.git
+[submodule "src/main/scala/Plugins/EngineWatcherAPI"]
+	path = src/main/scala/Plugins/EngineWatcherAPI
+	url = http://gitlab.qianfang.space:2000/qianfang/plugins/api/EngineWatcherAPI.git
