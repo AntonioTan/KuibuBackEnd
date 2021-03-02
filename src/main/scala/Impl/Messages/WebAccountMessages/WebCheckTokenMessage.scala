@@ -15,6 +15,6 @@ import scala.util.Try
 case class WebCheckTokenMessage(override val userToken: String) extends TokenMessage(userToken) {
   override def reaction(): Try[ReplyMessage] = Try {
     GlobalVariables.tokenUserMap.getOrElse(userToken, throw UserNotExistedException())
-    ReplyMessage(0, "ok")
+    ReplyMessage(0, userToken)
   }
 }
