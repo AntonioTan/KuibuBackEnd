@@ -16,5 +16,6 @@ import scala.util.Try
 case class CellphoneVerificationCodeMessage(cellphone: String) extends DisplayPortalMessage {
   override def reaction(): Try[ReplyMessage] = Try {
     ReplyMessage(0, API.request[CellphoneVerificationMessage](cellphone).get)
+    ReplyMessage(-1, "Disabled Mannually")
   }
 }

@@ -20,5 +20,6 @@ case class UsernameRegisterMessage(userName: String, password: String, confirm: 
   override def reaction(): Try[ReplyMessage] = Try{
     if (password != confirm) throw PasswordNotMatchedException()
     ReplyMessage(0, API.request[UserNameRegisterMessage](userName, password).get)
+    ReplyMessage(-1, "Disabled Mannually")
   }
 }
