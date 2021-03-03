@@ -1,7 +1,7 @@
 package Impl
 
 
-import Impl.Messages.WebAccountMessages.{WebCheckTokenMessage, WebGetCurrentUserMessage, WebLoginMessage}
+import Impl.Messages.WebAccountMessages.{WebCheckTokenMessage, WebGetUserInfoMessage, WebLoginMessage}
 import Impl.Messages._
 import Impl.WebAccountMessages.{CellphoneVerificationCodeMessage, UsernameRegisterMessage}
 import Plugins.CommonUtils.CommonTypes.{JacksonSerializable, ReplyMessage}
@@ -21,7 +21,7 @@ import scala.util.Try
     new JsonSubTypes.Type(value = classOf[WebLoginMessage], name = "WebLoginMessage"),
     new JsonSubTypes.Type(value = classOf[CellphoneVerificationCodeMessage], name = "CellphoneVerificationCodeMessage"),
     new JsonSubTypes.Type(value = classOf[UsernameRegisterMessage], name = "UsernameRegisterMessage"),
-    new JsonSubTypes.Type(value = classOf[WebGetCurrentUserMessage], name = "WebGetCurrentUserMessage"),
+    new JsonSubTypes.Type(value = classOf[WebGetUserInfoMessage], name = "WebGetUserInfoMessage"),
     new JsonSubTypes.Type(value = classOf[WebCheckTokenMessage], name = "WebCheckTokenMessage")
   ))
 abstract class DisplayPortalMessage(val sender: ServiceType = ServiceCenter.serviceType) extends JacksonSerializable{
