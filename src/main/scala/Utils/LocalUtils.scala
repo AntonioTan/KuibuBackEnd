@@ -21,9 +21,6 @@ object LocalUtils {
     }
   }
 
-  def updateActions():Unit={}
-  def timeOutAction():Unit={}
-
   def updateReplyMessageToken(message:ReplyMessage):ReplyMessage={
     if (message.info.contains(",")){
       ReplyMessage(message.status,

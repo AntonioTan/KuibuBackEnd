@@ -37,3 +37,9 @@
 [submodule "src/main/scala/Plugins/EngineWatcherAPI"]
 	path = src/main/scala/Plugins/EngineWatcherAPI
 	url = http://gitlab.qianfang.space:2000/qianfang/plugins/api/EngineWatcherAPI.git
+[submodule ".\\src\\main\\scala\\Plugins\\EnginePropertyAPI"]
+	path = .\\src\\main\\scala\\Plugins\\EnginePropertyAPI
+	url = http://gitlab.qianfang.space:2000/qianfang/plugins/api/EnginePropertyAPI.git
+[submodule ".\\src\\main\\scala\\Plugins\\TreeObjectClusterSync"]
+	path = .\\src\\main\\scala\\Plugins\\TreeObjectClusterSync
+	url = http://gitlab.qianfang.space:2000/qianfang/plugins/sharedclients/treeobjectclustersync.git
