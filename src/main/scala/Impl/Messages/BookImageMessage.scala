@@ -12,11 +12,11 @@ import Plugins.CloudSourcingShared.Infos.{AnswerRowClient, AnswerRowList, Questi
 import Plugins.CloudSourcingShared.Questions.{Question, SentenceQuestion, bookCutQuestionType, sentenceQuestionType}
 import Plugins.CommonUtils.CommonTypes.ReplyMessage
 import Plugins.CommonUtils.IOUtils
-import Plugins.TreeObjectAPI.EngineObjectGlobals
-import Plugins.TreeObjectAPI.EngineObjectGlobals.IDMap
-import Plugins.TreeObjectShared.InfoCollectionID
 import Plugins.MSUtils.API
 import Plugins.OCRAPI.{GetImageMessage, GetJsonInfoMessage, OCRInfoMessage}
+import Plugins.TreeObjectAPI.TreeObjectGlobals
+import Plugins.TreeObjectAPI.TreeObjectGlobals.IDMap
+import Plugins.TreeObjectShared.InfoCollectionID
 import Plugins.UserAccountAPI.GetInfoWithUserIDMessages.GetRealNameWithUserIDMessage
 import javax.imageio.ImageIO
 import org.apache.commons.codec.binary.Base64
@@ -27,7 +27,7 @@ import scala.util.Try
 case class BookImageMessage(bookID: Int, page: Int) extends DisplayPortalMessage {
   def formatSentenceAnswer(ans: SentenceSubAnswer): List[Object] = {
     ans.nodeType +: ans.info.map(t => List(IDMap(t.targetID.v).getActualName) ++ t.translate.map(a => {
-      EngineObjectGlobals.printCandidateObjectTrait(a)
+      TreeObjectGlobals.printCandidateObjectTrait(a)
     })
     )
   }

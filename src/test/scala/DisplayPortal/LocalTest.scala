@@ -1,6 +1,6 @@
 package DisplayPortal
 import Plugins.CommonUtils.CommonTypes.UserPath
-import Plugins.CommonUtils.Hub.ServiceCenter.{engineServiceCode, portMap, userAccountServiceCode}
+import Plugins.CommonUtils.Hub.ServiceCenter.{portMap, treeObjectServiceCode, userAccountServiceCode}
 import Plugins.MSUtils.AkkaBase.AkkaUtils
 import Plugins.MSUtils.{MailSender, ServiceUtils}
 import Process.{DisplayHttpServer, DisplayRoutes}
@@ -14,7 +14,7 @@ case class LocalTestPath() extends UserPath {
 
   override def akkaServerHostName(): String = "localhost"
 
-  override def seedNodeName(): String = "\"akka://QianFangCluster@localhost:" + portMap(engineServiceCode) + "\"," +
+  override def seedNodeName(): String = "\"akka://QianFangCluster@localhost:" + portMap(treeObjectServiceCode) + "\"," +
     " \"akka://QianFangCluster@localhost:" + portMap(userAccountServiceCode) + "\""
 
   override def deploy(): Boolean = false

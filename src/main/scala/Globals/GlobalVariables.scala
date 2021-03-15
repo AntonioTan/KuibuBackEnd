@@ -9,7 +9,7 @@ import akka.actor.typed.{ActorRef, ActorSystem}
 object GlobalVariables {
 
   var tokenUserMap:Map[String, String] = Map()
-  val watcherKey: ServiceKey[AkkaClusterMessage] =AkkaBase.qianFangEngineDisplayWatcherKey
+  val watcherKey: ServiceKey[AkkaClusterMessage] =AkkaBase.qianFangTreeObjectDisplayWatcherKey
 
   lazy val syncActorSet: Set[ActorRef[String]] = Set(ActorSystem(TreeObjectClusterSync.apply(), "clusterSync"))
 }

@@ -16,3 +16,21 @@
 [submodule "src/main/scala/Plugins/CloudSourcingShared"]
 	path = src/main/scala/Plugins/CloudSourcingShared
 	url = http://gitlab.qianfang.space:2000/qianfang/plugins/sharedobjects/cloudsourcingshared.git
+[submodule "src/main/scala/Plugins/TreeObjectAPI"]
+	path = src/main/scala/Plugins/TreeObjectAPI
+	url = http://gitlab.qianfang.space:2000/qianfang/plugins/api/TreeObjectAPI.git
+[submodule "src/main/scala/Plugins/PropertyAPI"]
+	path = src/main/scala/Plugins/PropertyAPI
+	url = http://gitlab.qianfang.space:2000/qianfang/plugins/api/PropertyAPI.git
+[submodule "src/main/scala/Plugins/TreeObjectShared"]
+	path = src/main/scala/Plugins/TreeObjectShared
+	url = http://gitlab.qianfang.space:2000/qianfang/plugins/sharedobjects/TreeObjectShared.git
+[submodule "src/main/scala/Plugins/TreeObjectWatcherClient"]
+	path = src/main/scala/Plugins/TreeObjectWatcherClient
+	url = http://gitlab.qianfang.space:2000/qianfang/plugins/sharedclients/TreeObjectWatcherClient.git
+[submodule "src/main/scala/TreeObjectClusterSync"]
+	path = src/main/scala/TreeObjectClusterSync
+	url = http://gitlab.qianfang.space:2000/qianfang/plugins/sharedclients/treeobjectclustersync.git
+[submodule "src/main/scala/Plugins/SendToTreeObject"]
+	path = src/main/scala/Plugins/SendToTreeObject
+	url = http://gitlab.qianfang.space:2000/qianfang/plugins/sharedclients/sendtotreeobject.git
