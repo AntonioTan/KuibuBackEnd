@@ -2,8 +2,8 @@ package Utils
 import Globals.{GlobalRules, GlobalVariables}
 import Plugins.CommonUtils.CommonTypes.ReplyMessage
 import Plugins.CommonUtils.StringUtils
-import Plugins.EngineOperationAPI.AkkaEngineOperationMessages.{AkkaEngineOperationMessage, UpdateTreeObjectMessage}
-import Plugins.EngineOperationAPI.TreeObjectAdmins.UpdateTreeObjectAdminVersionMessage
+import Plugins.TreeObjectAPI.AkkaEngineOperationMessages.{AkkaEngineOperationMessage, UpdateTreeObjectMessage}
+import Plugins.TreeObjectAPI.TreeObjectAdmins.UpdateTreeObjectAdminVersionMessage
 import Plugins.MSUtils.MailSender
 import Process.DisplayToEngine
 

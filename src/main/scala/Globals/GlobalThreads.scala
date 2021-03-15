@@ -1,7 +1,7 @@
 package Globals
 
 import Plugins.CloudSourcingAPI.CloudSourcingAPIMain
-import Plugins.EngineWatcherAPI.EngineWatcher
+import Plugins.TreeObjectWatcherClient.EngineWatcher
 import Plugins.MSUtils.AkkaBase.AkkaUtils
 import Plugins.OCRAPI.OCRAPIMain
 import Plugins.UserAccountAPI.UserAccountAPIMain
