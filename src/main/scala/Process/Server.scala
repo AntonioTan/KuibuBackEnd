@@ -6,7 +6,7 @@ import Plugins.MSUtils.MailSender
 import Utils.DBUtils
 
 /** 程序入口 */
-object PluginCenterEntrance {
+object Server {
   def main(args: Array[String]): Unit = try {
     println("=== master version (display) ===")
     println("setting up", clusterSystem)
