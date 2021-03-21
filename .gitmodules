@@ -4,21 +4,12 @@
 [submodule "src/main/scala/Plugins/MSUtils"]
 	path = src/main/scala/Plugins/MSUtils
 	url = http://gitlab.qianfang.space:2000/qianfang/plugins/MSUtils.git
+[submodule "src/main/scala/Plugins/Encryption"]
+	path = src/main/scala/Plugins/Encryption
+	url = http://gitlab.qianfang.space:2000/qianfang/plugins/Encryption.git
 [submodule "src/main/scala/Plugins/UserAccountAPI"]
 	path = src/main/scala/Plugins/UserAccountAPI
 	url = http://gitlab.qianfang.space:2000/qianfang/plugins/api/UserAccountAPI.git
-[submodule "src/main/scala/Plugins/ConsiliaAPI"]
-	path = src/main/scala/Plugins/ConsiliaAPI
-	url = http://gitlab.qianfang.space:2000/qianfang/plugins/api/consiliaapi.git
-[submodule "src/main/scala/Plugins/ConsiliaShared"]
-	path = src/main/scala/Plugins/ConsiliaShared
-	url = http://gitlab.qianfang.space:2000/qianfang/plugins/sharedobjects/consiliashared.git
-[submodule "src/main/scala/Plugins/EngineShared"]
-	path = src/main/scala/Plugins/EngineShared
-	url = http://gitlab.qianfang.space:2000/qianfang/plugins/sharedobjects/engineshared.git
-[submodule "src/main/scala/Plugins/DiagnosisOracleAPI"]
-	path = src/main/scala/Plugins/DiagnosisOracleAPI
-	url = http://gitlab.qianfang.space:2000/qianfang/plugins/api/diagnosisOracleapi.git
 [submodule "src/main/scala/Plugins/CloudSourcingAPI"]
 	path = src/main/scala/Plugins/CloudSourcingAPI
 	url = http://gitlab.qianfang.space:2000/qianfang/plugins/api/CloudSourcingAPI.git
@@ -28,12 +19,22 @@
 [submodule "src/main/scala/Plugins/CloudSourcingShared"]
 	path = src/main/scala/Plugins/CloudSourcingShared
 	url = http://gitlab.qianfang.space:2000/qianfang/plugins/sharedobjects/cloudsourcingshared.git
-[submodule "src/main/scala/Plugins/EngineOperationAPI"]
-	path = src/main/scala/Plugins/EngineOperationAPI
-	url = http://gitlab.qianfang.space:2000/qianfang/plugins/api/engineoperationapi.git
-[submodule "src/main/scala/Plugins/Encryption"]
-	path = src/main/scala/Plugins/Encryption
-	url = ssh://git@gitlab.qianfang.space:2001/qianfang/plugins/Encryption.git
-[submodule "src/main/scala/Plugins/EngineWatcherAPI"]
-	path = src/main/scala/Plugins/EngineWatcherAPI
-	url = http://gitlab.qianfang.space:2000/qianfang/plugins/api/EngineWatcherAPI.git
+[submodule "src/main/scala/Plugins/TreeObjectAPI"]
+	path = src/main/scala/Plugins/TreeObjectAPI
+	url = http://gitlab.qianfang.space:2000/qianfang/plugins/api/TreeObjectAPI.git
+[submodule "src/main/scala/Plugins/PropertyAPI"]
+	path = src/main/scala/Plugins/PropertyAPI
+	url = http://gitlab.qianfang.space:2000/qianfang/plugins/api/PropertyAPI.git
+[submodule "src/main/scala/Plugins/TreeObjectShared"]
+	path = src/main/scala/Plugins/TreeObjectShared
+	url = http://gitlab.qianfang.space:2000/qianfang/plugins/sharedobjects/TreeObjectShared.git
+[submodule "src/main/scala/Plugins/TreeObjectWatcherClient"]
+	path = src/main/scala/Plugins/TreeObjectWatcherClient
+	url = http://gitlab.qianfang.space:2000/qianfang/plugins/sharedclients/TreeObjectWatcherClient.git
+[submodule "src/main/scala/TreeObjectClusterSync"]
+	path = src/main/scala/TreeObjectClusterSync
+	url = http://gitlab.qianfang.space:2000/qianfang/plugins/sharedclients/treeobjectclustersync.git
+[submodule "src/main/scala/Plugins/SendToTreeObject"]
+	path = src/main/scala/Plugins/SendToTreeObject
+	url = http://gitlab.qianfang.space:2000/qianfang/plugins/sharedclients/sendtotreeobject.git
+
