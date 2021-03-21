@@ -1,6 +1,8 @@
 package Impl
 
 
+import java.lang.annotation.Annotation
+
 import Impl.Messages.WebAccountMessages.{WebCheckTokenMessage, WebGetUserInfoMessage, WebLoginMessage}
 import Impl.Messages._
 import Impl.WebAccountMessages.{CellphoneVerificationCodeMessage, UsernameRegisterMessage}
@@ -22,7 +24,9 @@ import scala.util.Try
     new JsonSubTypes.Type(value = classOf[CellphoneVerificationCodeMessage], name = "CellphoneVerificationCodeMessage"),
     new JsonSubTypes.Type(value = classOf[UsernameRegisterMessage], name = "UsernameRegisterMessage"),
     new JsonSubTypes.Type(value = classOf[WebGetUserInfoMessage], name = "WebGetUserInfoMessage"),
-    new JsonSubTypes.Type(value = classOf[WebCheckTokenMessage], name = "WebCheckTokenMessage")
+    new JsonSubTypes.Type(value = classOf[WebCheckTokenMessage], name = "WebCheckTokenMessage"),
+    new JsonSubTypes.Type(value = classOf[WebGetRankListMessage], name = "WebGetRankListMessage"),
+    new JsonSubTypes.Type(value = classOf[WebDecryptionMessage], name = "WebDecryptionMessage"),
   ))
 abstract class DisplayPortalMessage(val sender: ServiceType = ServiceCenter.serviceType) extends JacksonSerializable{
 
