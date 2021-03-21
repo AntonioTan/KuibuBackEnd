@@ -40,7 +40,6 @@ case class BookImageMessage(bookID: Int, page: Int) extends DisplayPortalMessage
     // 获取图片OCR信息
     val info = API.request[GetJsonInfoMessage, OCRInfoMessage](newBookID, page).get
     val infoDict = Map("locations" -> info.locations, "text" -> info.text)
-    println("tty yes")
     // 获取图片数据
     val pic = API.request[GetImageMessage, Array[Byte]](newBookID, page).get
     val sourceImg = ImageIO.read(new ByteArrayInputStream(pic))
