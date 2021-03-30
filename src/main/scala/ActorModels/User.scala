@@ -1,21 +1,32 @@
-package ActorModels
+package chat
 
-import akka.actor.typed.Behavior
-import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.{Actor, ActorRef}
 
 object User {
+  case class Connected(outgoing: ActorRef)
+  case class IncomingMessage(text: String)
+  case class OutgoingMessage(text: String)
+}
 
-  sealed trait UserService
-  case class PrivateChatService() extends UserService
+class User(chatRoom: ActorRef) extends Actor {
+  import User._
 
-  def apply(): Behavior[UserService] = {
-    Behaviors.setup[UserService] {
-      ctx =>
-        Behaviors.receiveMessage{
-          case PrivateChatService() =>
-            ctx.log.info("Hello ")
-            Behaviors.same
-        }
+  def receive = {
+    case Connected(outgoing) =>
+      context.become(connected(outgoing))
+  }
+
+  def connected(outgoing: ActorRef): Receive = {
+    chatRoom ! ChatRoom.Join
+
+    {
+      case IncomingMessage(text) =>
+        println(self.path)
+        System.out.println("incoming message: ", text)
+        chatRoom ! ChatRoom.ChatMessage(text)
+
+      case ChatRoom.ChatMessage(text) =>
+        outgoing ! OutgoingMessage(text)
     }
   }
 

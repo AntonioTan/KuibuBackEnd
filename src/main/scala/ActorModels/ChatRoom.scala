@@ -26,5 +26,6 @@ class ChatRoom(implicit system: ActorSystem) extends Actor {
     case msg: ChatMessage =>
       println(self.path)
       users.foreach(_ ! msg)
+
   }
 }

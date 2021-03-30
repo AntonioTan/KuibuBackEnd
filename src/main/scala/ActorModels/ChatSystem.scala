@@ -1,0 +1,5 @@
+package ActorModels
+
+class ChatSystem {
+
+}
