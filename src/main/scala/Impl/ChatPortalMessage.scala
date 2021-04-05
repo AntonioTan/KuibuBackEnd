@@ -18,8 +18,6 @@ import scala.util.Try
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSubTypes(
   Array(
-    new JsonSubTypes.Type(value = classOf[BookImageMessage], name = "BookImageMessage"),
-    new JsonSubTypes.Type(value = classOf[GetAvailableBookCutQuestionPageListMessage], name = "GetAvailableBookCutQuestionPageListMessage"),
     new JsonSubTypes.Type(value = classOf[WebLoginMessage], name = "WebLoginMessage"),
     new JsonSubTypes.Type(value = classOf[CellphoneVerificationCodeMessage], name = "CellphoneVerificationCodeMessage"),
     new JsonSubTypes.Type(value = classOf[UsernameRegisterMessage], name = "UsernameRegisterMessage"),
@@ -28,7 +26,7 @@ import scala.util.Try
     new JsonSubTypes.Type(value = classOf[WebGetRankListMessage], name = "WebGetRankListMessage"),
     new JsonSubTypes.Type(value = classOf[WebDecryptionMessage], name = "WebDecryptionMessage"),
   ))
-abstract class DisplayPortalMessage(val sender: ServiceType = ServiceCenter.serviceType) extends JacksonSerializable{
+abstract class ChatPortalMessage(val sender: ServiceType = ServiceCenter.serviceType) extends JacksonSerializable{
 
   /** 擦除敏感信息 */
   def eraseInformation(): Unit = {}

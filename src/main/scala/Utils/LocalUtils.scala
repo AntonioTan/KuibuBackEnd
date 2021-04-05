@@ -3,23 +3,9 @@ import Globals.{GlobalRules, GlobalVariables}
 import Plugins.CommonUtils.CommonTypes.ReplyMessage
 import Plugins.CommonUtils.StringUtils
 import Plugins.MSUtils.MailSender
-import Plugins.SendToTreeObject.SendToTreeObject
-import Plugins.TreeObjectAPI.AkkaTreeObjectMessages.{AkkaTreeObjectMessage, UpdateTreeObjectMessage}
-import Plugins.TreeObjectAPI.TreeObjectAdmins.UpdateTreeObjectAdminVersionMessage
-
 object LocalUtils {
   /** 处理异常，发送异常邮件 */
   def handleException(e: Throwable): Unit = MailSender.emailWarning(e)
-
-  /** 发送一个新的operation到TreeObject */
-  def send(message: AkkaTreeObjectMessage): Option[String]= {
-    /** 如果是实习状态，是不能发送更新操作的 */
-    message match {
-      case _: UpdateTreeObjectMessage => None
-      case _: UpdateTreeObjectAdminVersionMessage => None
-      case _  => SendToTreeObject.send(message)
-    }
-  }
 
   def updateReplyMessageToken(message:ReplyMessage):ReplyMessage={
     if (message.info.contains(",")){

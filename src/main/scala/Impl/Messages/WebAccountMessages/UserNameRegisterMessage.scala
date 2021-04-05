@@ -1,7 +1,7 @@
 package Impl.WebAccountMessages
 
 import Exceptions.PasswordNotMatchedException
-import Impl.DisplayPortalMessage
+import Impl.ChatPortalMessage
 import Plugins.CommonUtils.CommonTypes.ReplyMessage
 import Plugins.MSUtils.API
 import Plugins.UserAccountAPI.RegisterMessages.UserNameRegisterMessage
@@ -16,7 +16,7 @@ import scala.util.Try
  * @param password String 密码
  * [返回值] 用户登录的token String
  */
-case class UsernameRegisterMessage(userName: String, password: String, confirm: String) extends DisplayPortalMessage {
+case class UsernameRegisterMessage(userName: String, password: String, confirm: String) extends ChatPortalMessage {
   override def reaction(): Try[ReplyMessage] = Try{
     if (password != confirm) throw PasswordNotMatchedException()
 //    ReplyMessage(0, API.request[UserNameRegisterMessage](userName, password).get)

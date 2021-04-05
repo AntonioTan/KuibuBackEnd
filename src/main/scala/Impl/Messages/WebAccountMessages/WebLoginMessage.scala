@@ -1,6 +1,6 @@
 package Impl.Messages.WebAccountMessages
 
-import Impl.DisplayPortalMessage
+import Impl.ChatPortalMessage
 import Plugins.CommonUtils.CommonTypes.ReplyMessage
 import Plugins.MSUtils.API
 import Plugins.UserAccountAPI.LoginMessages.{CellphoneLoginMessage, EmailLoginMessage, NationalIDLoginMessage, UserNameLoginMessage}
@@ -16,7 +16,7 @@ import scala.util.Try
  * @param infoList  List[String] 登录需要的信息 邮箱和电话登录需要额外添加验证码
  *                  [返回值] token String
  */
-case class WebLoginMessage(loginType: String, infoList: List[String]) extends DisplayPortalMessage {
+case class WebLoginMessage(loginType: String, infoList: List[String]) extends ChatPortalMessage {
   override def reaction(): Try[ReplyMessage] = Try {
     val replyMessage: ReplyMessage = loginType match {
       case "email" => ReplyMessage(0, API.request[EmailLoginMessage](infoList.head, infoList.last).get)

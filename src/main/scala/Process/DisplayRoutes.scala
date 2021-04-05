@@ -1,6 +1,6 @@
 package Process
 
-import Impl.{DisplayPortalMessage, fromObject}
+import Impl.{ChatPortalMessage, fromObject}
 import Plugins.CommonUtils.CommonExceptions.{ExceptionWithCode, MessageException}
 import Plugins.CommonUtils.CommonTypes.ReplyMessage
 import Plugins.CommonUtils.{IOUtils, StringUtils}
@@ -21,7 +21,7 @@ class DisplayRoutes()(implicit val system: ActorSystem[_]) {
               entity(as[String]) { bytes =>
                 System.out.println("$ display got a post: " + bytes)
                 try{
-                  val message=IOUtils.deserialize[DisplayPortalMessage](bytes).get
+                  val message=IOUtils.deserialize[ChatPortalMessage](bytes).get
                   message.processResult() match {
                     case Success(value) =>
                       message.addMessage(returnMessage="成功", successful = true).get

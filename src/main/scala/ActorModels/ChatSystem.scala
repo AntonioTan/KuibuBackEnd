@@ -1,5 +1,0 @@
-package ActorModels
-
-class ChatSystem {
-
-}

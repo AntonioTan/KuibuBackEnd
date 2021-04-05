@@ -1,7 +1,7 @@
 package Tables
 
 import Globals.GlobalDBs
-import Impl.DisplayPortalMessage
+import Impl.ChatPortalMessage
 import Impl.Messages.TokenMessage
 import Plugins.CommonUtils.IOUtils
 import Plugins.MSUtils.CustomColumnTypes._
@@ -14,12 +14,12 @@ import slick.lifted.{ProvenShape, Tag}
 
 import scala.util.Try
 
-case class UserMessageRow(content : DisplayPortalMessage, time : DateTime, userID:String,
+case class UserMessageRow(content : ChatPortalMessage, time : DateTime, userID:String,
                           returnMessage:String, succesful:Boolean, userMessagePK:Long=0L)
 class UserMessageTable(tag:Tag) extends Table[UserMessageRow](tag, GlobalDBs.display_schema, _tableName = "user_message"){
   def userMessagePK:Rep[Long]=column[Long]("user_message_pk", O.PrimaryKey, O.AutoInc,  O.SqlType("SERIAL"))
   def userID:Rep[String]=column[String]("user_id")
-  def content : Rep[DisplayPortalMessage] = column[DisplayPortalMessage] ("content")
+  def content : Rep[ChatPortalMessage] = column[ChatPortalMessage] ("content")
   def time : Rep[DateTime] = column[DateTime] ("time")
   def returnMessage:Rep[String]=column[String]("return_message")
   def successful:Rep[Boolean]=column[Boolean]("successful")
@@ -30,13 +30,13 @@ object UserMessageTable {
   val userMessageTable: TableQuery[UserMessageTable] = TableQuery[UserMessageTable]
 
   /** 在表格里面加入一个message */
-  def addMessage(m:DisplayPortalMessage, userID:String, returnMessage:String, successful:Boolean): Try[Unit] = Try{
+  def addMessage(m:ChatPortalMessage, userID:String, returnMessage:String, successful:Boolean): Try[Unit] = Try{
     m.eraseInformation()
     /** remove token，因为token没啥用 */
     m match {
       case _: TokenMessage =>
         val st: String = compact(render(parse(IOUtils.serialize(m).get) merge JObject(("userToken", JString("")))))
-        val m2 = IOUtils.deserialize[DisplayPortalMessage](st).get
+        val m2 = IOUtils.deserialize[ChatPortalMessage](st).get
         ServiceUtils.exec(userMessageTable += UserMessageRow(m2, DateTime.now, userID, returnMessage, successful))
       case _ => ServiceUtils.exec(userMessageTable += UserMessageRow(m, DateTime.now, userID, returnMessage, successful))
     }

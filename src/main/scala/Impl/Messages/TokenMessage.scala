@@ -2,7 +2,7 @@ package Impl.Messages
 
 import Exceptions.{FrequentLoginException, UserNotExistedException}
 import Globals.{GlobalIOs, GlobalRules, GlobalVariables}
-import Impl.DisplayPortalMessage
+import Impl.ChatPortalMessage
 import Plugins.CommonUtils.CommonTypes.ReplyMessage
 import Plugins.MSUtils.{API, MailSender}
 import Plugins.UserAccountAPI.GetInfoMessages.GetUserIDByTokenMessage
@@ -11,7 +11,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 
 import scala.util.Try
 
-abstract class TokenMessage(val userToken: String ) extends DisplayPortalMessage {
+abstract class TokenMessage(val userToken: String ) extends ChatPortalMessage {
   @JsonIgnore
   var userID:String=""
   override def processResult(): Try[ReplyMessage] = Try{

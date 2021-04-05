@@ -1,7 +1,6 @@
-package chat
+package ActorModels.Test
 
 import akka.actor._
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{BroadcastHub, Keep, MergeHub}
 
 object ChatRoom {

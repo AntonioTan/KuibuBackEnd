@@ -1,4 +1,4 @@
-package chat
+package ActorModels.Test
 
 import akka.actor.{Actor, ActorRef}
 
@@ -6,6 +6,11 @@ object User {
   case class Connected(outgoing: ActorRef)
   case class IncomingMessage(text: String)
   case class OutgoingMessage(text: String)
+  case class UserInitialized()
+  case class UserCompleted()
+  final case class UserFailure(ex: Throwable)
+  val onErrorMessage = (ex: Throwable) => UserFailure(ex)
+
 }
 
 class User(chatRoom: ActorRef) extends Actor {
