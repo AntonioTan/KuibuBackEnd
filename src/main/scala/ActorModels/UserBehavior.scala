@@ -18,11 +18,11 @@ object UserBehavior {
     ))
   trait UserCommand
   case class UserChatMessage(content: String) extends UserCommand with JacksonSerializable
-  case class UserNotifierMessage(notifier: ActorRef[UserChatProtocol]) extends UserCommand with JacksonSerializable
+  case class UserNotifierMessage(notifier: ActorRef[UserCommand]) extends UserCommand with JacksonSerializable
   case object UserPushCompleteMessage extends UserCommand with JacksonSerializable
   case class UserPushFailMessage(ex: Throwable) extends UserCommand with JacksonSerializable
   val onUserPushFail: Throwable => UserPushFailMessage = (ex: Throwable) =>  UserPushFailMessage(ex)
-  case class UserWsCompleteMessage() extends UserCommand with JacksonSerializable
+  case object UserWsCompleteMessage extends UserCommand
   case class UserWsFailMessage(ex: Throwable) extends UserCommand with JacksonSerializable
 
 
@@ -51,9 +51,6 @@ class UserBehavior(context: ActorContext[UserCommand]) extends AbstractBehavior[
 //        this
       case UserPushFailMessage(ex) =>
         context.log.warn(s"${context.self.path} User push failed!")
-        this
-      case UserWsCompleteMessage() =>
-        context.log.info("User successfully pushed a new WS message!")
         this
       case UserWsFailMessage(ex) =>
         context.log.warn("User failed to deal a WS message")

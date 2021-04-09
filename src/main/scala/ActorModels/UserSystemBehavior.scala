@@ -31,27 +31,30 @@ object UserSystemBehavior {
         Behaviors.receiveMessage {
           case UserAddedMessage(userID: String) =>
             val newUser: ActorRef[UserCommand] = context.spawn(UserBehavior(), userID)
-            val source: Source[UserChatProtocol, ActorRef[UserChatProtocol]] = ActorSource.actorRef[UserChatProtocol](completionMatcher = {
-              case Complete =>
+            val source: Source[UserCommand, ActorRef[UserCommand]] = ActorSource.actorRef[UserCommand](completionMatcher = {
+              case UserWsCompleteMessage =>
             }, failureMatcher = {
-              case Fail(ex) => ex
+              case UserWsFailMessage(ex) => ex
             }, bufferSize = 8, overflowStrategy = OverflowStrategy.fail)
             Flow.fromGraph(GraphDSL.create(source){
               implicit builder =>
-                (pushSource: SourceShape[UserChatProtocol]) =>
-
+                (pushSource: SourceShape[UserCommand]) =>
+                  import GraphDSL.Implicits._
                   implicit val timeout: akka.util.Timeout = 1.second
 
                   val flowFromWs: FlowShape[Message, UserChatMessage] = builder.add(
                     Flow[Message].map{
                       case TextMessage.Strict(text: String) => UserChatMessage(text)
                       case BinaryMessage.Strict(text) => UserChatMessage("")
-                    }
+                    }.buffer(1024 * 1024, OverflowStrategy.fail)
                   )
-                  val flowToUser = builder.add(ActorFlow.ask(newUser)(makeMessage = (el: UserChatMessage, replyTo: ActorRef[Message])=>el))
-                  val connectedWs: Flow[ActorRef[UserChatProtocol], UserNotifierMessage, NotUsed] = Flow[ActorRef[UserChatProtocol]].map((actor: ActorRef[UserChatProtocol]) => UserNotifierMessage(actor))
+                  val flowToUser: FlowShape[UserChatMessage, Message] = builder.add(ActorFlow.ask(newUser)(makeMessage = (el: UserChatMessage, replyTo: ActorRef[Message])=>el))
+
+                  val connectedWs: Flow[ActorRef[UserCommand], UserNotifierMessage, NotUsed] = Flow[ActorRef[UserCommand]].map((actor: ActorRef[UserCommand]) => UserNotifierMessage(actor))
+
                   val pushActorSink = ActorSink.actorRef[UserCommand](ref = newUser, onCompleteMessage = UserPushCompleteMessage, onFailureMessage = onUserPushFail )
 
+                  flowFromWs ~> flowToUser
                   builder.materializedValue ~> connectedWs ~> pushActorSink
                 FlowShape(flowFromWs.in, flowFromWs.out)
             })
