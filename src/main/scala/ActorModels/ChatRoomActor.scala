@@ -1,7 +1,7 @@
 package ActorModels
 
 import ActorModels.ChatRoomActor.{ChatRoomAddUserMessage, ChatRoomChatMessage, ChatRoomCommand}
-import ActorModels.UserActor.{UserChatMessage, UserCommand}
+import ActorModels.UserBehavior.{UserChatMessage, UserCommand}
 import akka.NotUsed
 import akka.actor.typed.{ActorRef, ActorSystem, Behavior}
 import akka.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors}
@@ -37,10 +37,10 @@ class ChatRoomBehavior(context: ActorContext[ChatRoomCommand]) extends AbstractB
   override def onMessage(msg: ChatRoomCommand): Behavior[ChatRoomCommand] = {
     msg match {
       case ChatRoomAddUserMessage(userID: String) =>
-        this.userMap.update(userID, context.spawn(UserActor(userID), userID))
+        this.userMap.update(userID, context.spawn(UserBehavior(), userID))
         this
       case ChatRoomChatMessage(userID: String, content: String) =>
-        this.userMap.getOrElseUpdate(userID, context.spawn(UserActor(userID), userID)) ! UserChatMessage(content)
+        this.userMap.getOrElseUpdate(userID, context.spawn(UserBehavior(), userID)) ! UserChatMessage(content)
         this
     }
   }

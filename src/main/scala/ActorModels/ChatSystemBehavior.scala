@@ -2,9 +2,11 @@ package ActorModels
 
 
 import ActorModels.ChatRoomActor.{ChatRoomChatMessage, ChatRoomCommand}
+import ActorModels.UserBehavior.UserChatMessage
 import Globals.GlobalVariables
 import Impl.ChatPortalMessage
 import Impl.Messages.WebAccountMessages.WebLoginMessage
+import Plugins.CommonUtils.CommonTypes.JacksonSerializable
 import Plugins.CommonUtils.IOUtils
 import Plugins.MSUtils.AkkaBase.AkkaUtils.system
 import WSMessage.Messages.WebPrivateChatMessage
@@ -14,14 +16,19 @@ import akka.actor.typed.{ActorRef, ActorSystem, Behavior}
 import akka.http.scaladsl.model.ws.{BinaryMessage, Message, TextMessage}
 import akka.stream.scaladsl.{BroadcastHub, Flow, Keep, MergeHub, Source}
 import akka.stream.typed.scaladsl.ActorSource
+import com.fasterxml.jackson.annotation.{JsonSubTypes, JsonTypeInfo}
 
 import scala.collection.concurrent.TrieMap
 
 
-object ChatSystemActor {
+object ChatSystemBehavior {
 
   //  trait ChatSystemProtocol
-
+//  @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
+//  @JsonSubTypes(
+//    Array(
+//      new JsonSubTypes.Type(value = classOf[ChatSystemGetChatRoom], name = "ChatSystemGetChatRoom"),
+//    ))
   trait ChatSystemCommand
 
   case class ChatSystemInit(ackTo: ActorRef[ChatSystemCommand]) extends ChatSystemCommand
@@ -45,7 +52,7 @@ object ChatSystemActor {
 
   def apply(): Behavior[ChatSystemCommand] =
     Behaviors.setup { context => {
-      implicit val sys: ActorSystem[ChatSystemCommand] = system
+      implicit val sys: ActorSystem[SystemBehavior.SystemCommand] = system
       Behaviors.receiveMessage {
         case ChatSystemChatRoomAdded(roomID: String) =>
           context.log.info2("ChatSystem{} {}", roomID, "to add")

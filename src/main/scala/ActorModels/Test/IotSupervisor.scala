@@ -1,6 +1,6 @@
 package ActorModels.Test
 
-import ActorModels.ChatSystemActor
+import ActorModels.ChatSystemBehavior
 import Globals.GlobalVariables
 import akka.actor.typed.{Behavior, PostStop, Signal}
 import akka.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors}
@@ -8,7 +8,7 @@ import akka.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors}
 object IotSupervisor {
   def apply(): Behavior[Nothing] =
     Behaviors.setup[Nothing](context => {
-      GlobalVariables.chatSystem = context.spawn(ChatSystemActor(), "ChatSystem")
+      GlobalVariables.chatSystem = context.spawn(ChatSystemBehavior(), "ChatSystem")
       new IotSupervisor(context)
     })
 }

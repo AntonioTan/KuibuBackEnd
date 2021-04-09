@@ -35,7 +35,9 @@ libraryDependencies ++= Seq(
   "org.json4s" %% "json4s-native" % "3.6.0-M3",
   "com.aliyun" % "aliyun-java-sdk-dysmsapi" % "2.1.0",
   "com.aliyun" % "aliyun-java-sdk-core" % "4.5.4",
-  "com.github.takezoe" %% "runtime-scaladoc-reader" % "1.0.1"   //读注释生成文档，注意到下面的addComplilerPlugin(com.github.takezoe)也需要加
+  "com.github.takezoe" %% "runtime-scaladoc-reader" % "1.0.1",  //读注释生成文档，注意到下面的addComplilerPlugin(com.github.takezoe)也需要加
+  "ch.qos.logback" % "logback-classic" % "1.0.9"
+
 )
 addCompilerPlugin("com.github.takezoe" %% "runtime-scaladoc-reader" % "1.0.1")
 

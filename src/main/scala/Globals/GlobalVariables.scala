@@ -1,6 +1,8 @@
 package Globals
 
-import ActorModels.ChatSystemActor.ChatSystemCommand
+import ActorModels.ChatSystemBehavior.ChatSystemCommand
+import ActorModels.UserSystemBehavior.UserSystemCommand
+import ActorModels.UserWebGuardianBehavior.UserWebGuardianCommand
 import Plugins.MSUtils.AkkaBase
 import Plugins.MSUtils.AkkaBase.AkkaClusterMessage
 import akka.actor
@@ -22,4 +24,7 @@ object GlobalVariables {
   lazy val requestAkka: actor.ActorSystem = akka.actor.ActorSystem("SingleRequest", config)
 
   var chatSystem: ActorRef[ChatSystemCommand] = _
+  var userSystem: ActorRef[UserSystemCommand] = _
+  var userWebGuardian: ActorRef[UserWebGuardianCommand] = _
+
 }
