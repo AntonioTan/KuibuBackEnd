@@ -3,14 +3,15 @@ package chat
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter.ISO_LOCAL_TIME
 
-import ActorModels.{ChatSystemBehavior, SystemBehavior, UserBehavior, UserWebGuardianBehavior, UserWebRequestBehavior, UserWebSystem}
+import ActorModels.{ChatSystemBehavior, SystemBehavior, UserBehavior, UserSystemBehavior, UserWebGuardianBehavior, UserWebRequestBehavior, UserWebSystem}
 import ActorModels.ChatSystemBehavior.{ChatSystemAskingMessage, ChatSystemChatMessage, ChatSystemChatRoomAdded, ChatSystemCommand, ChatSystemComplete, ChatSystemFail, ChatSystemGetChatRoom, ChatSystemInit, ChatSystemProtocolMessage}
 import ActorModels.SystemBehavior.{SystemCondition, SystemStart}
-import ActorModels.UserBehavior.{Complete, Fail, UserChatMessage, UserChatProtocol, UserCommand}
+import ActorModels.UserBehavior.{UserCommand, UserWsPushMessage}
+import ActorModels.UserSystemBehavior.{UserAddedMessage, UserFlowResponseMessage}
 import ActorModels.UserWebGuardianBehavior.UserWebRequestGenerateMessage
 import ActorModels.UserWebRequestBehavior.{UserWebCommand, UserWebLoginCommand}
 import Globals.GlobalVariables
-import Globals.GlobalVariables.userWebGuardian
+import Globals.GlobalVariables.{userSystem, userWebGuardian}
 import Impl.ChatPortalMessage
 import Impl.Messages.WebAccountMessages.WebLoginMessage
 import Plugins.CommonUtils.IOUtils
@@ -37,14 +38,14 @@ import com.typesafe.config.{Config, ConfigFactory}
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration._
 import scala.io.StdIn
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 object Server {
   def main(args: Array[String]): Unit = {
 
 //    println(GlobalVariables.chatSystem.hashCode())
 
-    val userWebSystem: ActorSystem[SpawnProtocol.Command] = ActorSystem(UserWebSystem(), "UserWebSystem")
+//    val userWebSystem: ActorSystem[SpawnProtocol.Command] = ActorSystem(UserWebSystem(), "UserWebSystem")
     println(IOUtils.serialize(WebLoginMessage("hh", List.apply[String]("jj"))).get)
     println(IOUtils.deserialize[UserCommand]("{\"type\":\"UserChatMessage\",\"content\":\"Hello\"}"))
 
@@ -52,6 +53,21 @@ object Server {
     system ! SystemStart()
 
     //    }
+    Thread.sleep(1000)
+
+//    import akka.actor.typed.scaladsl.AskPattern._
+//    implicit val pathUserWebSystem: ActorSystem[SystemBehavior.SystemCommand] = system
+//    implicit val ec: ExecutionContext = system.executionContext
+//    implicit val timeout: Timeout = Timeout(1.seconds)
+//    val addedResponse: Future[UserSystemBehavior.UserFlowResponseMessage] = userSystem.askWithStatus(ref => UserAddedMessage(userID = "001", ref))
+//
+//    addedResponse.onComplete((a: Try[UserFlowResponseMessage]) =>{
+//
+//      println(a.get.userFlow)
+//      Source.single(TextMessage("Hello")).via(
+//        a.get.userFlow).to(Sink.foreach(println(_)))
+//    })
+//    Source(List(1, 2, 3)).map(_ + 1).async.map(_ * 2).to(Sink.foreach(println(_)))
 
     val route: Route = concat(
       pathPrefix("chat") {
@@ -98,29 +114,28 @@ object Server {
           }
         }
       },
-//      pathPrefix("test") {
-//        get {
-//          parameters(
-//            "userID"
-//          ) {
-//
-//
-//          }
-//          val source: Source[UserChatProtocol, ActorRef[UserChatProtocol]] = ActorSource.actorRef[UserChatProtocol](completionMatcher = {
-//            case Complete =>
-//          }, failureMatcher = {
-//            case Fail(ex) => ex
-//          }, bufferSize = 8, overflowStrategy = OverflowStrategy.fail)
-//          val ref: Future[Done] = source.run()
-//          Flow.fromGraph(GraphDSL.create(source) { implicit builder =>
-//            pushSource =>
-//            import GraphDSL.Implicits._
-//
-//            builder.materializedValue
-//
-//          })
-//        }
-//      }
+      pathPrefix("test") {
+        get {
+          parameters(
+            "userID"
+          ) {
+            (userID: String) => {
+              import akka.actor.typed.scaladsl.AskPattern._
+              implicit val pathUserWebSystem: ActorSystem[SystemBehavior.SystemCommand] = system
+              implicit val ec: ExecutionContext = system.executionContext
+              implicit val timeout: Timeout = Timeout(1.seconds)
+              val addedResponse: Future[UserSystemBehavior.UserFlowResponseMessage] = userSystem.askWithStatus(ref => UserAddedMessage(userID = userID, ref))
+              onComplete(addedResponse) {
+                case Success(UserFlowResponseMessage(userFlow)) =>
+                  handleWebSocketMessages(userFlow)
+                case Failure(exception) =>
+                  complete(InternalServerError, "Failed to connect to Server!")
+              }
+
+            }
+          }
+        }
+      }
     )
 
     implicit val materializer: Materializer = Materializer(system)
