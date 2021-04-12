@@ -19,6 +19,14 @@ object DBUtils {
       )
     )
   }
+  def initKuibuDatabase():Unit = {
+    exec(
+      DBIO.seq(
+        sql"""CREATE SCHEMA IF NOT EXISTS kuibu""".as[Long],
+        UserAccountTable.userAccountTable.schema.createIfNotExists,
+      )
+    )
+  }
   def dropDatabases():Unit={
     val rlt = Dialog.showConfirmation(null, "真的要删除所有的数据库么？", "", optionType = Options.YesNo)
     if (rlt == Result.Yes || rlt == Result.Ok) {
@@ -30,5 +38,14 @@ object DBUtils {
         )
       )
     }
+  }
+
+  def dropKuibuDatabase(): Unit={
+    exec(
+      DBIO.seq(
+        UserAccountTable.userAccountTable.schema.dropIfExists,
+        sql"""DROP SCHEMA IF EXISTS kuibu""".as[Long],
+      )
+    )
   }
 }

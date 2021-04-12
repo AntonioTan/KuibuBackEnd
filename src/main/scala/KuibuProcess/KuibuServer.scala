@@ -1,51 +1,74 @@
-package chat
+package KuibuProcess
 
-import java.time.LocalTime
-import java.time.format.DateTimeFormatter.ISO_LOCAL_TIME
-
-import ActorModels.{ChatSystemBehavior, SystemBehavior, UserBehavior, UserSystemBehavior, UserWebGuardianBehavior, UserWebRequestBehavior, UserWebSystem}
-import ActorModels.ChatSystemBehavior.{ChatSystemAskingMessage, ChatSystemChatMessage, ChatSystemChatRoomAdded, ChatSystemCommand, ChatSystemComplete, ChatSystemFail, ChatSystemGetChatRoom, ChatSystemInit, ChatSystemProtocolMessage}
+import ActorModels.ChatSystemBehavior.ChatSystemAskingMessage
 import ActorModels.SystemBehavior.{SystemCondition, SystemStart}
-import ActorModels.UserBehavior.{UserCommand, UserWsPushMessage}
+import ActorModels.UserBehavior.UserCommand
 import ActorModels.UserSystemBehavior.{UserAddedMessage, UserFlowResponseMessage}
 import ActorModels.UserWebGuardianBehavior.UserWebRequestGenerateMessage
-import ActorModels.UserWebRequestBehavior.{UserWebCommand, UserWebLoginCommand}
+import ActorModels.UserWebRequestBehavior.{UserWebCommand, UserWebLoginCommand, UserWebMessage}
+import ActorModels.{ChatSystemBehavior, SystemBehavior, UserSystemBehavior, UserWebGuardianBehavior}
 import Globals.GlobalVariables
 import Globals.GlobalVariables.{userSystem, userWebGuardian}
-import Impl.ChatPortalMessage
 import Impl.Messages.WebAccountMessages.WebLoginMessage
+import Plugins.CommonUtils.CommonTypes.UserPath
+import Plugins.CommonUtils.Hub.ServiceCenter.{portMap, treeObjectServiceCode, userAccountServiceCode}
 import Plugins.CommonUtils.IOUtils
-import Plugins.MSUtils.AkkaBase.AkkaUtils
 import Plugins.MSUtils.AkkaBase.AkkaUtils.system
-import akka.actor.typed.scaladsl.AskPattern.Askable
-import akka.actor.typed.scaladsl.Behaviors
-import akka.{Done, NotUsed, actor}
-import akka.actor.typed.{ActorRef, ActorSystem, Behavior, Props, SpawnProtocol, SupervisorStrategy}
-import akka.actor.typed.scaladsl.adapter.{ClassicActorRefOps, PropsAdapter, TypedActorSystemOps}
+import Test.LocalTestPath
+import Utils.DBUtils
+import akka.actor.typed.scaladsl.adapter.TypedActorSystemOps
+import akka.actor.typed.{ActorRef, ActorSystem}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.StatusCodes.InternalServerError
-import akka.http.scaladsl.model.sse.ServerSentEvent
 import akka.http.scaladsl.model.ws.{Message, TextMessage}
 import akka.http.scaladsl.server.Directives.{complete, concat, pathPrefix, _}
 import akka.http.scaladsl.server.Route
-import akka.stream.{FlowShape, Materializer, OverflowStrategy}
-import akka.stream.scaladsl.MergeHub.source
+import akka.stream.Materializer
 import akka.stream.scaladsl._
-import akka.stream.typed.scaladsl.{ActorFlow, ActorSink, ActorSource}
+import akka.stream.typed.scaladsl.ActorFlow
 import akka.util.Timeout
-import com.typesafe.config.{Config, ConfigFactory}
+import akka.{NotUsed, actor}
 
-import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration._
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.io.StdIn
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Success}
 
-object Server {
+case class LocalTestPath() extends UserPath {
+  override def setHttpServerIP(): String = "localhost"
+
+  override def dbServerName(): String = "localhost"
+
+  override def akkaServerHostName(): String = "localhost"
+
+  override def seedNodeName(): String = "\"akka://QianFangCluster@localhost:" + portMap(treeObjectServiceCode) + "\"," +
+    " \"akka://QianFangCluster@localhost:" + portMap(userAccountServiceCode) + "\""
+
+  override def deploy(): Boolean = false
+
+  override def setServer(): (String, Int) = {
+    /** 外网稳定版server端口 */
+    ("222.128.10.132", 2003)
+
+    /** 内网测试版server端口 (30071 <=> 3071) */
+    //    ("192.168.50.232", 30071)
+
+    /** 本地版server端口 */
+    //    ("localhost", 6070)
+  }
+
+}
+object KuibuServer {
   def main(args: Array[String]): Unit = {
 
 //    println(GlobalVariables.chatSystem.hashCode())
 
 //    val userWebSystem: ActorSystem[SpawnProtocol.Command] = ActorSystem(UserWebSystem(), "UserWebSystem")
+    UserPath.chosenPath=LocalTestPath()
+    // 测试阶段 之后删除
+    DBUtils.dropKuibuDatabase()
+    DBUtils.initKuibuDatabase()
+    Thread.sleep(10000)
     println(IOUtils.serialize(WebLoginMessage("hh", List.apply[String]("jj"))).get)
     println(IOUtils.deserialize[UserCommand]("{\"type\":\"UserChatMessage\",\"content\":\"Hello\"}"))
 
@@ -55,22 +78,9 @@ object Server {
     //    }
     Thread.sleep(1000)
 
-//    import akka.actor.typed.scaladsl.AskPattern._
-//    implicit val pathUserWebSystem: ActorSystem[SystemBehavior.SystemCommand] = system
-//    implicit val ec: ExecutionContext = system.executionContext
-//    implicit val timeout: Timeout = Timeout(1.seconds)
-//    val addedResponse: Future[UserSystemBehavior.UserFlowResponseMessage] = userSystem.askWithStatus(ref => UserAddedMessage(userID = "001", ref))
-//
-//    addedResponse.onComplete((a: Try[UserFlowResponseMessage]) =>{
-//
-//      println(a.get.userFlow)
-//      Source.single(TextMessage("Hello")).via(
-//        a.get.userFlow).to(Sink.foreach(println(_)))
-//    })
-//    Source(List(1, 2, 3)).map(_ + 1).async.map(_ * 2).to(Sink.foreach(println(_)))
 
     val route: Route = concat(
-      pathPrefix("chat") {
+      pathPrefix("KuibuProcess") {
         concat(
           pathPrefix("msg") {
             get {
@@ -95,7 +105,8 @@ object Server {
         )
 
       },
-        pathPrefix("events") {
+        pathPrefix("web") {
+          concat(
         get {
           import akka.actor.typed.scaladsl.AskPattern._
           implicit val pathUserWebSystem: ActorSystem[SystemBehavior.SystemCommand] = system
@@ -105,14 +116,36 @@ object Server {
           val userWebRequestActor: Future[UserWebGuardianBehavior.UserWebRequestGenerateResponse] = userWebGuardian.askWithStatus(ref => UserWebRequestGenerateMessage(ref))
           onComplete(userWebRequestActor) {
             case Success(UserWebGuardianBehavior.UserWebRequestGenerateResponse(newRequestActor)) =>
-              onComplete(newRequestActor.askWithStatus(ref => UserWebLoginCommand("Hello", ref))) {
+              onComplete(newRequestActor.askWithStatus(ref => UserWebMessage(UserWebLoginCommand("Hello"), ref))) {
                 case Success(value) =>
                   complete(value.toString)
                 case Failure(exception) => complete(InternalServerError, "Failed to create feedback!")
               }
             case Failure(exception) => complete(InternalServerError, "Failed to create feedback!")
           }
-        }
+        },
+          post {
+            entity(as[String]) {
+              bytes: String => {
+                import akka.actor.typed.scaladsl.AskPattern._
+                implicit val pathUserWebSystem: ActorSystem[SystemBehavior.SystemCommand] = system
+                implicit val ec: ExecutionContext = system.executionContext
+                implicit val timeout: Timeout = Timeout(3.seconds)
+                val message: UserWebCommand = IOUtils.deserialize[UserWebCommand](bytes).get
+                val userWebRequestActor: Future[UserWebGuardianBehavior.UserWebRequestGenerateResponse] = userWebGuardian.askWithStatus(ref => UserWebRequestGenerateMessage(ref))
+                onComplete(userWebRequestActor) {
+                  case Success(UserWebGuardianBehavior.UserWebRequestGenerateResponse(newRequestActor)) =>
+                    onComplete(newRequestActor.askWithStatus(ref => UserWebMessage(message, ref))) {
+                      case Success(value) =>
+                        complete(IOUtils.serialize(value))
+                      case Failure(exception) => complete(InternalServerError, exception.getMessage)
+                    }
+                  case Failure(exception) => complete(InternalServerError, "Failed to create feedback!")
+                }
+              }
+            }
+          }
+          )
       },
       pathPrefix("test") {
         get {

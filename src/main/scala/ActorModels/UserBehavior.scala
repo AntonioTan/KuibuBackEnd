@@ -1,19 +1,15 @@
 package ActorModels
 
-import ActorModels.UserBehavior.{UserChatConvertMessage, UserChatMessage, UserCommand, UserNotifierMessage, UserPushCompleteMessage, UserPushFailMessage, UserWsCompleteMessage, UserWsFailMessage, replyToMap}
-import Impl.Messages.GetRankListMessage
+import ActorModels.UserBehavior._
 import Plugins.CommonUtils.CommonTypes.JacksonSerializable
-import akka.actor
-import akka.actor.Actor.noSender
-import akka.actor.TypedActor.self
-import akka.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors, LoggerOps}
+import akka.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.http.scaladsl.model.ws.{Message, TextMessage}
 import com.fasterxml.jackson.annotation.{JsonSubTypes, JsonTypeInfo}
 
 import scala.collection.concurrent.TrieMap
 
-
+// 该behavior主要用于处理websocket发来的同步性质的消息
 object UserBehavior {
 
   @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
@@ -30,7 +26,7 @@ object UserBehavior {
   case object UserWsCompleteMessage extends UserCommand
   case class UserWsFailMessage(ex: Throwable) extends UserCommand with JacksonSerializable
   case class UserWsPushMessage(content: String) extends UserCommand with JacksonSerializable
-  case class UserChatConvertMessage(chat: UserChatMessage, replyTo: ActorRef[Message]) extends UserCommand with JacksonSerializable
+  case class UserWsConvertMessage(usrCmd: UserCommand, replyTo: ActorRef[Message]) extends UserCommand with JacksonSerializable
 
 
 //  trait UserChatProtocol
@@ -66,11 +62,15 @@ class UserBehavior(context: ActorContext[UserCommand]) extends AbstractBehavior[
       case UserWsCompleteMessage =>
         context.log.info("User completed a new ws message")
         this
+      // 更新消息通知者的消息
       case UserNotifierMessage(replyTo: ActorRef[UserCommand], userID: String) =>
         replyToMap.update(userID, replyTo)
         this
-      case UserChatConvertMessage(chat, replyTo) =>
-        replyTo ! TextMessage.Strict(chat.content)
+      case UserWsConvertMessage(msg, replyTo) =>
+        msg match {
+          case UserChatMessage(content: String) =>
+            replyTo ! TextMessage.Strict(content)
+        }
         this
 
     }

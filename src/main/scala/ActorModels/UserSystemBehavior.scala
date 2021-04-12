@@ -1,6 +1,6 @@
 package ActorModels
 
-import ActorModels.UserBehavior.{ UserChatConvertMessage, UserChatMessage,  UserCommand, UserNotifierMessage, UserPushCompleteMessage, UserPushFailMessage, UserWsCompleteMessage, UserWsFailMessage, UserWsPushMessage, onUserPushFail}
+import ActorModels.UserBehavior.{ UserWsConvertMessage, UserChatMessage,  UserCommand, UserNotifierMessage, UserPushCompleteMessage, UserPushFailMessage, UserWsCompleteMessage, UserWsFailMessage, UserWsPushMessage, onUserPushFail}
 import Plugins.CommonUtils.IOUtils
 import akka.NotUsed
 import akka.actor.typed.{ActorRef, Behavior}
@@ -45,14 +45,15 @@ object UserSystemBehavior {
 
                   implicit val timeout: akka.util.Timeout = 1.second
 
-                  val flowFromWs: FlowShape[Message, UserChatMessage] = builder.add(
+                  val flowFromWs: FlowShape[Message, UserCommand] = builder.add(
                     Flow[Message].map{
                       case TextMessage.Strict(text: String) =>
-                        UserChatMessage(text)
+                        IOUtils.deserialize[UserCommand](text).get
                       case BinaryMessage.Strict(text) => UserChatMessage("")
                     }.buffer(1024 * 1024, OverflowStrategy.fail)
                   )
-                  val flowToUser: FlowShape[UserChatMessage, Message] = builder.add(ActorFlow.ask(newUser)(makeMessage = (el: UserChatMessage, replyTo: ActorRef[Message])=>UserChatConvertMessage(el, replyTo)))
+
+                  val flowToUser: FlowShape[UserCommand, Message] = builder.add(ActorFlow.ask(newUser)(makeMessage = (el: UserCommand, replyTo: ActorRef[Message])=>UserWsConvertMessage(el, replyTo)))
 
                   val connectedWs: Flow[ActorRef[UserCommand], UserNotifierMessage, NotUsed] = Flow[ActorRef[UserCommand]].map((actor: ActorRef[UserCommand]) => UserNotifierMessage(actor, userID))
 
@@ -62,7 +63,7 @@ object UserSystemBehavior {
                     case UserWsPushMessage(content: String) => UserChatMessage(content)
                   })
 
-                  val mergeToUser = builder.add(Merge[UserChatMessage](2))
+                  val mergeToUser = builder.add(Merge[UserCommand](2))
 
                   flowFromWs ~> mergeToUser.in(0)
                   pushSource ~> pushToUser ~> mergeToUser.in(1)
