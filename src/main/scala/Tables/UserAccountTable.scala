@@ -18,30 +18,54 @@ import slick.lifted.{ProvenShape, Tag}
 
 import scala.util.Try
 
-case class UserAccountRow(userID: String, userName: String, passWord: String, registerTime: DateTime)
+case class UserAccountRow(userID: String, userName: String, passWord: String, registerTime: DateTime, sessionList: List[String], friendIDList: List[String])
 
-class UserAccountTable(tag:Tag) extends Table[UserAccountRow] (tag,GlobalDBs.kuibu_schema, _tableName = "user_account"){
-  def userID:Rep[String]=column[String]("user_id", O.PrimaryKey)
-  def userName: Rep[String]=column[String]("user_name")
-  def passWord: Rep[String]=column[String]("pass_word")
-  def registerTime:Rep[DateTime]=column[DateTime]("register_time")
+class UserAccountTable(tag: Tag) extends Table[UserAccountRow](tag, GlobalDBs.kuibu_schema, _tableName = "user_account") {
+  def userID: Rep[String] = column[String]("user_id", O.PrimaryKey)
 
-  def * : ProvenShape[UserAccountRow] = (userID, userName, passWord, registerTime).mapTo[UserAccountRow]
+  def userName: Rep[String] = column[String]("user_name")
+
+  def passWord: Rep[String] = column[String]("pass_word")
+
+  def registerTime: Rep[DateTime] = column[DateTime]("register_time")
+
+  def sessionList: Rep[List[String]] = column[List[String]]("session_list")
+
+  def friendIDList: Rep[List[String]] = column[List[String]]("friend_id_list")
+
+  override def * : ProvenShape[UserAccountRow] = (userID, userName, passWord, registerTime, sessionList, friendIDList).mapTo[UserAccountRow]
 }
+
 object UserAccountTable {
   val userAccountTable: TableQuery[UserAccountTable] = TableQuery[UserAccountTable]
 
-  def generateNewID() : String = {
-    var newID=StringUtils.randomString(GlobalRules.userIDLength)
-    while (IDExists(newID).get) newID=StringUtils.randomString(GlobalRules.userIDLength)
+  def generateNewID(): String = {
+    var newID = StringUtils.randomString(GlobalRules.userIDLength)
+    while (IDExists(newID).get) newID = StringUtils.randomString(GlobalRules.userIDLength)
     newID
   }
-  def addUser(userID: String, userName: String, userPassword: String): Try[Unit] = Try{
+
+  // 添加新的user
+  def addUser(userID: String, userName: String, userPassword: String): Try[Unit] = Try {
     val now = DateTime.now()
-    ServiceUtils.exec(userAccountTable += UserAccountRow(userID, userName, userPassword, now))
+    val newSessionList: List[String] = List.empty[String]
+    val newFriendIDList: List[String] = List.empty[String]
+    ServiceUtils.exec(userAccountTable += UserAccountRow(userID, userName, userPassword, now, sessionList = newSessionList, friendIDList = newFriendIDList))
   }
-  def IDExists(userID:String):Try[Boolean]=Try{
-    ServiceUtils.exec(userAccountTable.filter(_.userID===userID).exists.result)
+
+  def checkLogin(userID: String, passWord: String): Try[Boolean] = Try {
+    ServiceUtils.exec(userAccountTable.filter(user => user.userID===userID&&user.passWord===passWord).exists.result)
+  }
+
+  // 添加新的对话id
+  def addSessionID(userID: String, sessionID: String): Try[Unit] = Try {
+    val pastSessionIDList: List[String] = ServiceUtils.exec(userAccountTable.filter(_.userID===userID).map(_.sessionList).result.head)
+    val newSessionIDList: List[String] = pastSessionIDList :+ sessionID
+    ServiceUtils.exec(userAccountTable.filter(_.userID===userID).map(_.sessionList).update(newSessionIDList))
+  }
+
+  def IDExists(userID: String): Try[Boolean] = Try {
+    ServiceUtils.exec(userAccountTable.filter(_.userID === userID).exists.result)
   }
 
 }

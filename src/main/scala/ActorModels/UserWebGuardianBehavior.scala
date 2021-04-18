@@ -18,7 +18,7 @@ object UserWebGuardianBehavior {
       context =>
         Behaviors.receiveMessage {
           case UserWebRequestGenerateMessage(sender: ActorRef[StatusReply[UserWebRequestGenerateResponse]]) =>
-            val newRequestActor = context.spawnAnonymous(UserWebRequestBehavior())
+            val newRequestActor: ActorRef[UserWebCommand] = context.spawnAnonymous(UserWebRequestBehavior())
             sender ! StatusReply.success(UserWebRequestGenerateResponse(newRequestActor))
             Behaviors.same
         }

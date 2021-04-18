@@ -1,7 +1,7 @@
 package ActorModels
 
 import ActorModels.UserBehavior.UserChatMessage
-import ActorModels.UserWebRequestBehavior.{UserWebCommand, UserWebLoginCommand, UserWebMessage, UserWebRegisterMessage, WebReplyMessage, WebReplyRegisterMessage}
+import ActorModels.UserWebRequestBehavior.{UserWebCommand, UserWebLoginCommand, UserWebLoginMessage, UserWebMessage, UserWebRegisterMessage, WebReplyLoginMessage, WebReplyMessage, WebReplyRegisterMessage}
 import Plugins.CommonUtils.CommonTypes.JacksonSerializable
 import Tables.UserAccountTable
 import akka.actor.typed.{ActorRef, Behavior}
@@ -18,12 +18,13 @@ object UserWebRequestBehavior {
       new JsonSubTypes.Type(value = classOf[UserWebMessage], name = "UserWebMessage"),
       new JsonSubTypes.Type(value = classOf[UserWebLoginCommand], name = "UserWebLoginCommand"),
       new JsonSubTypes.Type(value = classOf[UserWebRegisterMessage], name = "UserWebRegisterMessage"),
+      new JsonSubTypes.Type(value = classOf[UserWebLoginMessage], name = "UserWebLoginMessage"),
     ))
   sealed trait UserWebCommand
   case class UserWebMessage(message: UserWebCommand, sender: ActorRef[StatusReply[WebReplyMessage]]) extends UserWebCommand with JacksonSerializable
   case class UserWebLoginCommand(text: String) extends UserWebCommand with JacksonSerializable
-  case class UserWebRegisterMessage(userName: String, pwd: String, rePwd: String) extends UserWebCommand with JacksonSerializable
-
+  case class UserWebRegisterMessage(userName: String, passWord: String, rePassWord: String) extends UserWebCommand with JacksonSerializable
+  case class UserWebLoginMessage(userID: String, passWord: String) extends UserWebCommand with JacksonSerializable
   @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
   @JsonSubTypes(
     Array(
@@ -32,6 +33,7 @@ object UserWebRequestBehavior {
     ))
   sealed trait WebReplyMessage
   case class WebReplyRegisterMessage(userID: String, reason: String, outcome: Boolean) extends WebReplyMessage with JacksonSerializable
+  case class WebReplyLoginMessage(reason: String, outcome: Boolean) extends WebReplyMessage with JacksonSerializable
 
   def apply(): Behavior[UserWebCommand] = {
     Behaviors.setup(context =>
@@ -57,6 +59,15 @@ class UserWebRequestBehavior(context: ActorContext[UserWebCommand]) extends Abst
               ref ! StatusReply.error("未能成功创建用户")
             }
             Behaviors.stopped
+          case UserWebLoginMessage(userID, pwd) =>
+            val loginState: Boolean = UserAccountTable.checkLogin(userID, pwd).get
+            if(loginState) {
+              ref ! StatusReply.success(WebReplyLoginMessage(reason = "成功登录！", outcome = true))
+            } else {
+              ref ! StatusReply.success(WebReplyLoginMessage(reason = "未成功登录", outcome = false))
+            }
+            Behaviors.stopped
+
         }
     }
   }

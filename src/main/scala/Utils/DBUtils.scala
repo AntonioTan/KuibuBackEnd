@@ -24,6 +24,9 @@ object DBUtils {
       DBIO.seq(
         sql"""CREATE SCHEMA IF NOT EXISTS kuibu""".as[Long],
         UserAccountTable.userAccountTable.schema.createIfNotExists,
+        UserChatContentTable.userChatContentTable.schema.createIfNotExists,
+        UserUnreadMessageTable.userUnreadMessageTable.schema.createIfNotExists,
+        ChatSessionInfoTable.chatSessionInfoTable.schema.createIfNotExists,
       )
     )
   }
@@ -34,6 +37,7 @@ object DBUtils {
         DBIO.seq(
           UserMessageTable.userMessageTable.schema.dropIfExists,
           SuperUserTable.superUserTable.schema.dropIfExists,
+          UserChatContentTable.userChatContentTable.schema.dropIfExists,
           sql"""DROP SCHEMA IF EXISTS display_user""".as[Long],
         )
       )
@@ -44,6 +48,9 @@ object DBUtils {
     exec(
       DBIO.seq(
         UserAccountTable.userAccountTable.schema.dropIfExists,
+        UserChatContentTable.userChatContentTable.schema.dropIfExists,
+        UserUnreadMessageTable.userUnreadMessageTable.schema.dropIfExists,
+        ChatSessionInfoTable.chatSessionInfoTable.schema.dropIfExists,
         sql"""DROP SCHEMA IF EXISTS kuibu""".as[Long],
       )
     )
