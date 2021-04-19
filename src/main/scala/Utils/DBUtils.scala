@@ -27,6 +27,7 @@ object DBUtils {
         UserChatContentTable.userChatContentTable.schema.createIfNotExists,
         UserUnreadMessageTable.userUnreadMessageTable.schema.createIfNotExists,
         ChatSessionInfoTable.chatSessionInfoTable.schema.createIfNotExists,
+        ProjectInfoTable.projectInfoTable.schema.createIfNotExists,
       )
     )
   }
@@ -51,6 +52,7 @@ object DBUtils {
         UserChatContentTable.userChatContentTable.schema.dropIfExists,
         UserUnreadMessageTable.userUnreadMessageTable.schema.dropIfExists,
         ChatSessionInfoTable.chatSessionInfoTable.schema.dropIfExists,
+        ProjectInfoTable.projectInfoTable.schema.dropIfExists,
         sql"""DROP SCHEMA IF EXISTS kuibu""".as[Long],
       )
     )

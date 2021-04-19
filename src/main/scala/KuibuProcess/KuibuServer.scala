@@ -7,7 +7,7 @@ import ActorModels.UserSystemBehavior.{UserAddedMessage, UserFlowResponseMessage
 import ActorModels.UserWebGuardianBehavior.UserWebRequestGenerateMessage
 import ActorModels.UserWebRequestBehavior.{UserWebCommand, UserWebLoginCommand, UserWebMessage}
 import ActorModels.{ChatSystemBehavior, SystemBehavior, UserSystemBehavior, UserWebGuardianBehavior}
-import Globals.GlobalVariables
+import Globals.{GlobalDBs, GlobalVariables}
 import Globals.GlobalVariables.{userSystem, userWebGuardian}
 import Impl.Messages.WebAccountMessages.WebLoginMessage
 import Plugins.CommonUtils.CommonTypes.UserPath
@@ -65,9 +65,10 @@ object KuibuServer {
 //    val userWebSystem: ActorSystem[SpawnProtocol.Command] = ActorSystem(UserWebSystem(), "UserWebSystem")
     UserPath.chosenPath=LocalTestPath()
     // 测试阶段 之后删除
-//    DBUtils.dropKuibuDatabase()
+    DBUtils.dropKuibuDatabase()
     DBUtils.initKuibuDatabase()
     Thread.sleep(10000)
+    GlobalDBs.addInitialData()
     println(IOUtils.serialize(WebLoginMessage("hh", List.apply[String]("jj"))).get)
     println(IOUtils.deserialize[UserCommand]("{\"type\":\"UserChatMessage\",\"content\":\"Hello\"}"))
 
@@ -131,6 +132,7 @@ object KuibuServer {
                 implicit val ec: ExecutionContext = system.executionContext
                 implicit val timeout: Timeout = Timeout(3.seconds)
                 val message: UserWebCommand = IOUtils.deserialize[UserWebCommand](bytes).get
+                println("tty", message)
                 val userWebRequestActor: Future[UserWebGuardianBehavior.UserWebRequestGenerateResponse] = userWebGuardian.askWithStatus(ref => UserWebRequestGenerateMessage(ref))
                 onComplete(userWebRequestActor) {
                   case Success(UserWebGuardianBehavior.UserWebRequestGenerateResponse(newRequestActor)) =>

@@ -14,7 +14,7 @@ object KuibuDBTest {
     DBUtils.dropKuibuDatabase()
     DBUtils.initKuibuDatabase()
     val newID: String = UserAccountTable.generateNewID()
-    UserAccountTable.addUser(newID, "test1", "test2")
+    UserAccountTable.addUserWithUserID(newID, "test1", "test2")
 
   }
 

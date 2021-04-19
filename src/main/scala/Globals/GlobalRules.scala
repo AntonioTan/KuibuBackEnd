@@ -5,11 +5,11 @@ object GlobalRules {
 
   val tokenLength=50
 
-  val userIDLength: Int = 10
+  val userIDLength: Int = 6
 
-  val sessionIDLength: Int = 20
+  val sessionIDLength: Int = 6
 
-  val taskIDLength: Int = 10
+  val taskIDLength: Int = 6
 
-  val projectIDLength: Int = 10
+  val projectIDLength: Int = 6
 }

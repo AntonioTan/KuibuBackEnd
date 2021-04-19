@@ -4,6 +4,7 @@ import Globals.{GlobalDBs, GlobalRules}
 import Plugins.CommonUtils.StringUtils
 import Plugins.MSUtils.CustomColumnTypes._
 import Plugins.MSUtils.ServiceUtils
+import Tables.UserAccountTable.userAccountTable
 import org.joda.time.DateTime
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{ProvenShape, Tag}
@@ -37,6 +38,14 @@ object ChatSessionInfoTable {
     val newID = generateNewID()
     val now = DateTime.now()
     ServiceUtils.exec(chatSessionInfoTable += ChatSessionInfoRow(sessionID = newID, sessionName = sessionName, startDate = now, userIDList = userIDList))
+  }
+
+  def addChatSessionInfoWithID(sessionID: String, sessionName: String, userIDList: List[String]): Try[Unit] = Try {
+    val now = DateTime.now()
+    ServiceUtils.exec(chatSessionInfoTable += ChatSessionInfoRow(sessionID = sessionID, sessionName = sessionName, startDate = now, userIDList = userIDList))
+    for(userID <- userIDList) {
+      UserAccountTable.addSessionID(userID, sessionID)
+    }
   }
 
   def IDExists(sessionID: String): Try[Boolean] = Try {
