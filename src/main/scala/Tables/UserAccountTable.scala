@@ -4,6 +4,7 @@ import Globals.{GlobalDBs, GlobalRules}
 import Plugins.CommonUtils.StringUtils
 import Plugins.MSUtils.CustomColumnTypes._
 import Plugins.MSUtils.ServiceUtils
+import geny.Generator.from
 import org.joda.time.DateTime
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{ProvenShape, Tag}
@@ -77,9 +78,21 @@ object UserAccountTable {
 
   def getBasicUserInfo(userID: String): Try[UserBasicInfo] = Try {
     val user: UserAccountRow = ServiceUtils.exec(userAccountTable.filter(_.userID===userID).result.head)
+    var friendMap: Map[String, String] = Map.empty[String, String]
     UserBasicInfo(user.userName, user.sessionIDList, user.friendIDList, user.projectIDList)
   }
 
+  def getUserNamesByIDs(userIDs: List[String]): Try[Map[String, String]] = Try {
+    var memberMap = Map.empty[String, String]
+    for(userID <- userIDs) {
+      memberMap = memberMap ++ Map(userID -> getNameByID(userID).get)
+    }
+    memberMap
+  }
+
+  def getNameByID(userID: String): Try[String] = Try {
+    ServiceUtils.exec(userAccountTable.filter(_.userID===userID).map(_.userName).result.head)
+  }
 
   def checkLogin(userID: String, passWord: String): Try[Boolean] = Try {
     ServiceUtils.exec(userAccountTable.filter(user => user.userID===userID&&user.passWord===passWord).exists.result)

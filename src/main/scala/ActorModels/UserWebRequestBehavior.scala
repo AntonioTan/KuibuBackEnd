@@ -1,9 +1,9 @@
 package ActorModels
 
 import ActorModels.UserBehavior.UserChatMessage
-import ActorModels.UserWebRequestBehavior.{UserWebBasicProjectInfoMessage, UserWebBasicUserInfoMessage, UserWebCommand, UserWebLoginCommand, UserWebLoginMessage, UserWebMessage, UserWebRegisterMessage, WebReplyBasicProjectInfoMessage, WebReplyBasicUserInfoMessage, WebReplyLoginMessage, WebReplyMessage, WebReplyRegisterMessage}
+import ActorModels.UserWebRequestBehavior.{UserWebAddProjectMessage, UserWebBasicProjectInfoMessage, UserWebBasicUserInfoMessage, UserWebCommand, UserWebGetCompleteProjectInfoMessage, UserWebGetMemberMapMessage, UserWebLoginCommand, UserWebLoginMessage, UserWebMessage, UserWebRegisterMessage, WebReplyAddProjectMessage, WebReplyBasicProjectInfoMessage, WebReplyBasicUserInfoMessage, WebReplyGetCompleteProjectInfoMessage, WebReplyLoginMessage, WebReplyMemberMapMessage, WebReplyMessage, WebReplyRegisterMessage}
 import Plugins.CommonUtils.CommonTypes.JacksonSerializable
-import Tables.{ProjectBasicInfo, ProjectInfoTable, UserAccountTable, UserBasicInfo}
+import Tables.{ProjectBasicInfo, ProjectCompleteInfo, ProjectInfoTable, UserAccountTable, UserBasicInfo}
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors}
 import akka.pattern.StatusReply
@@ -21,6 +21,10 @@ object UserWebRequestBehavior {
       new JsonSubTypes.Type(value = classOf[UserWebLoginMessage], name = "UserWebLoginMessage"),
       new JsonSubTypes.Type(value = classOf[UserWebBasicUserInfoMessage], name = "UserWebBasicUserInfoMessage"),
       new JsonSubTypes.Type(value = classOf[UserWebBasicProjectInfoMessage], name = "UserWebBasicProjectInfoMessage"),
+      new JsonSubTypes.Type(value = classOf[UserWebGetMemberMapMessage], name = "UserWebGetMemberMapMessage"),
+      new JsonSubTypes.Type(value = classOf[UserWebAddProjectMessage], name = "UserWebAddProjectMessage"),
+      new JsonSubTypes.Type(value = classOf[UserWebGetCompleteProjectInfoMessage], name = "UserWebGetCompleteProjectInfoMessage"),
+
     ))
   sealed trait UserWebCommand
   case class UserWebMessage(message: UserWebCommand, sender: ActorRef[StatusReply[WebReplyMessage]]) extends UserWebCommand with JacksonSerializable
@@ -29,6 +33,9 @@ object UserWebRequestBehavior {
   case class UserWebLoginMessage(userID: String, passWord: String) extends UserWebCommand with JacksonSerializable
   case class UserWebBasicUserInfoMessage(userID: String) extends UserWebCommand with JacksonSerializable
   case class UserWebBasicProjectInfoMessage(projectID: String) extends UserWebCommand with JacksonSerializable
+  case class UserWebGetMemberMapMessage(userIDs: List[String]) extends UserWebCommand with JacksonSerializable
+  case class UserWebAddProjectMessage(projectName: String, createUserID: String, description: String, userIDList: List[String]) extends UserWebCommand with JacksonSerializable
+  case class UserWebGetCompleteProjectInfoMessage(projectID: String) extends UserWebCommand with JacksonSerializable
 
   @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
   @JsonSubTypes(
@@ -36,12 +43,18 @@ object UserWebRequestBehavior {
       new JsonSubTypes.Type(value = classOf[WebReplyLoginMessage], name = "WebReplyLoginMessage"),
       new JsonSubTypes.Type(value = classOf[WebReplyRegisterMessage], name = "WebReplyRegisterMessage"),
       new JsonSubTypes.Type(value = classOf[WebReplyBasicUserInfoMessage], name = "WebReplyBasicUserInfoMessage"),
+      new JsonSubTypes.Type(value = classOf[WebReplyMemberMapMessage], name = "WebReplyMemberMapMessage"),
+      new JsonSubTypes.Type(value = classOf[WebReplyAddProjectMessage], name = "WebReplyAddProjectMessage"),
+      new JsonSubTypes.Type(value = classOf[WebReplyGetCompleteProjectInfoMessage], name = "WebReplyGetCompleteProjectInfoMessage"),
     ))
   sealed trait WebReplyMessage
   case class WebReplyRegisterMessage(userID: String, reason: String, outcome: Boolean) extends WebReplyMessage with JacksonSerializable
   case class WebReplyLoginMessage(reason: String, outcome: Boolean) extends WebReplyMessage with JacksonSerializable
   case class WebReplyBasicUserInfoMessage(userBasicInfo: UserBasicInfo) extends  WebReplyMessage with JacksonSerializable
   case class WebReplyBasicProjectInfoMessage(projectBasicInfo: ProjectBasicInfo) extends WebReplyMessage with JacksonSerializable
+  case class WebReplyMemberMapMessage(memberMap: Map[String, String]) extends WebReplyMessage with JacksonSerializable
+  case class WebReplyAddProjectMessage(projectID: String) extends WebReplyMessage with JacksonSerializable
+  case class WebReplyGetCompleteProjectInfoMessage(projectCompleteInfo: ProjectCompleteInfo) extends WebReplyMessage with JacksonSerializable
 
   def apply(): Behavior[UserWebCommand] = {
     Behaviors.setup(context =>
@@ -81,6 +94,14 @@ class UserWebRequestBehavior(context: ActorContext[UserWebCommand]) extends Abst
           case UserWebBasicProjectInfoMessage(projectID) =>
             ref ! StatusReply.success(WebReplyBasicProjectInfoMessage(ProjectInfoTable.getBasicProjectInfo(projectID).get))
             Behaviors.stopped
+          case UserWebGetMemberMapMessage(userIDs) =>
+            ref ! StatusReply.success(WebReplyMemberMapMessage(UserAccountTable.getUserNamesByIDs(userIDs).get))
+            Behaviors.stopped
+          case UserWebAddProjectMessage(projectName, createUserID, description, userIDList) =>
+            ref ! StatusReply.success(WebReplyAddProjectMessage(ProjectInfoTable.addProject(projectName, createUserID, description, userIDList).get))
+            Behaviors.stopped
+          case UserWebGetCompleteProjectInfoMessage(projectID) =>
+            ref ! StatusReply.success(WebReplyGetCompleteProjectInfoMessage(ProjectInfoTable.getCompleteProjectInfo(projectID).get))
         }
     }
   }

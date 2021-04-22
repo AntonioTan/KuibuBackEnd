@@ -48,6 +48,10 @@ object ChatSessionInfoTable {
     }
   }
 
+  def getSessionName(sessionID: String): Try[String] = Try{
+    ServiceUtils.exec(chatSessionInfoTable.filter(_.sessionID===sessionID).map(_.sessionName).result.head)
+  }
+
   def IDExists(sessionID: String): Try[Boolean] = Try {
     ServiceUtils.exec(chatSessionInfoTable.filter(_.sessionID === sessionID).exists.result)
   }

@@ -46,4 +46,8 @@ object TaskInfoTable {
   def IDExists(taskID: String): Try[Boolean] = Try {
     ServiceUtils.exec(taskInfoTable.filter(_.taskID === taskID).exists.result)
   }
+
+  def getTaskName(taskID: String): Try[String] = Try {
+    ServiceUtils.exec(taskInfoTable.filter(_.taskID === taskID).map(_.taskName).result.head)
+  }
 }
