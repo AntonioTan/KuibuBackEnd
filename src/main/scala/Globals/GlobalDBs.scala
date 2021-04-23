@@ -1,12 +1,17 @@
 package Globals
 
-import Tables.{ChatSessionInfoTable, ProjectInfoRow, ProjectInfoTable, UserAccountTable}
+import Tables.{ChatSessionInfoTable, ProjectInfoRow, ProjectInfoTable, TaskInfoTable, UserAccountTable}
+import org.joda.time.DateTime
+import org.joda.time.format.DateTimeFormat
 
 import scala.util.Try
 
 object GlobalDBs {
   val display_schema: Option[String] = Some("display_user")
   val kuibu_schema: Option[String] = Some("kuibu")
+
+  val dateTimeFormatter = DateTimeFormat.forPattern("yyyy/MM/dd")
+
 
   def addInitialData(): Try[Unit] = Try {
     UserAccountTable.addUserWithUserID("tttttt", "Tianyi", "Tianyi")
@@ -32,6 +37,14 @@ object GlobalDBs {
       List("tttttt", "aaaaaa", "bbbbbb", "cccccc", "dddddd", "eeeeee", "ffffff"))
     ProjectInfoTable.addProjectWithID("222222", "任务管理信息系统开发", "tttttt", "进行任务管理信息系统的开发",
       List("tttttt","aaaaaa", "bbbbbb", "cccccc", "dddddd", "eeeeee", "ffffff"))
+    TaskInfoTable.addTaskWithID(taskID = "000000", taskName = "周训练", projectID = "111111",
+      startDate = DateTime.parse("2021/04/02", dateTimeFormatter), endDate = DateTime.parse("2021/04/03", dateTimeFormatter), description = "完成周训练", leaderIDList=List[String]("tttttt"), childrenIDList = List[String]("111111", "222222", "333333"), userIDList = List[String]("tttttt", "aaaaaa", "bbbbbb", "cccccc", "dddddd"))
+    TaskInfoTable.addTaskWithID(taskID = "111111", taskName = "下蹲", projectID = "111111",
+      startDate = DateTime.parse("2021/04/02", dateTimeFormatter), endDate = DateTime.parse("2021/04/03", dateTimeFormatter), description = "主要是力量训练 让大家增强力量", parentID = "000000", childrenIDList = List.empty[String], userIDList = List[String]("tttttt", "aaaaaa"))
+    TaskInfoTable.addTaskWithID(taskID = "222222", taskName = "投篮", projectID = "111111",
+      startDate = DateTime.parse("2021/04/02", dateTimeFormatter), endDate = DateTime.parse("2021/04/03", dateTimeFormatter), description = "主要是中投训练让大家适应比赛", parentID = "000000", childrenIDList = List.empty[String], userIDList = List[String]("tttttt", "cccccc"))
+    TaskInfoTable.addTaskWithID(taskID = "333333", taskName = "跑位", projectID = "111111",
+      startDate = DateTime.parse("2021/04/02", dateTimeFormatter), endDate = DateTime.parse("2021/04/03", dateTimeFormatter), description = "主要是跑位训练 让大家更灵活", parentID = "000000", childrenIDList = List.empty[String], userIDList = List[String]("tttttt", "bbbbbb"))
   }
 
 }
