@@ -75,13 +75,6 @@ object ChatSystemBehavior {
         case ChatSystemAskingMessage(msg: Message, roomID: String, replyTo: ActorRef[Message]) =>
           println("ChatSystem get add message!")
           var dd:String = ""
-          var a = msg match {
-            case TextMessage.Strict(text)=>
-              IOUtils.deserialize[WebLoginMessage](text).get
-            case BinaryMessage.Strict(text)=>
-              IOUtils.deserialize[WebLoginMessage](text.toString()).get
-          }
-          println(a)
           val (sink, source) = MergeHub.source[Message].toMat(BroadcastHub.sink[Message])(Keep.both).run
           val chatRoomFlow = Flow.fromSinkAndSource(sink, source)
           chatRoomFlowMap.getOrElseUpdate(roomID, chatRoomFlow)

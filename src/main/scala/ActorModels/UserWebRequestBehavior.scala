@@ -1,9 +1,9 @@
 package ActorModels
 
 import ActorModels.UserBehavior.UserChatMessage
-import ActorModels.UserWebRequestBehavior.{UserWebAddProjectMessage, UserWebBasicProjectInfoMessage, UserWebBasicUserInfoMessage, UserWebCommand, UserWebGetCompleteProjectInfoMessage, UserWebGetCompleteTaskInfoMessage, UserWebGetMemberMapMessage, UserWebLoginCommand, UserWebLoginMessage, UserWebMessage, UserWebRegisterMessage, WebReplyAddProjectMessage, WebReplyBasicProjectInfoMessage, WebReplyBasicUserInfoMessage, WebReplyGetCompleteProjectInfoMessage, WebReplyGetCompleteTaskInfoMessage, WebReplyLoginMessage, WebReplyMemberMapMessage, WebReplyMessage, WebReplyRegisterMessage}
+import ActorModels.UserWebRequestBehavior.{UserWebAddProjectMessage, UserWebAddTaskMessage, UserWebBasicProjectInfoMessage, UserWebBasicUserInfoMessage, UserWebCommand, UserWebGetCompleteProjectInfoMessage, UserWebGetCompleteTaskInfoMessage, UserWebGetMemberMapMessage, UserWebLoginCommand, UserWebLoginMessage, UserWebMessage, UserWebRegisterMessage, WebReplyAddProjectMessage, WebReplyAddTaskMessage, WebReplyBasicProjectInfoMessage, WebReplyBasicUserInfoMessage, WebReplyGetCompleteProjectInfoMessage, WebReplyGetCompleteTaskInfoMessage, WebReplyLoginMessage, WebReplyMemberMapMessage, WebReplyMessage, WebReplyRegisterMessage}
 import Plugins.CommonUtils.CommonTypes.JacksonSerializable
-import Tables.{ProjectBasicInfo, ProjectCompleteInfo, ProjectInfoTable, TaskCompleteInfo, TaskInfoTable, UserAccountTable, UserBasicInfo}
+import Tables.{ProjectBasicInfo, ProjectCompleteInfo, ProjectInfoTable, TaskAddResult, TaskCompleteInfo, TaskInfoTable, TaskNewFromWeb, UserAccountTable, UserBasicInfo}
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors}
 import akka.pattern.StatusReply
@@ -25,7 +25,7 @@ object UserWebRequestBehavior {
       new JsonSubTypes.Type(value = classOf[UserWebAddProjectMessage], name = "UserWebAddProjectMessage"),
       new JsonSubTypes.Type(value = classOf[UserWebGetCompleteProjectInfoMessage], name = "UserWebGetCompleteProjectInfoMessage"),
       new JsonSubTypes.Type(value = classOf[UserWebGetCompleteTaskInfoMessage], name = "UserWebGetCompleteTaskInfoMessage"),
-
+      new JsonSubTypes.Type(value = classOf[UserWebAddTaskMessage], name = "UserWebAddTaskMessage"),
     ))
   sealed trait UserWebCommand
   case class UserWebMessage(message: UserWebCommand, sender: ActorRef[StatusReply[WebReplyMessage]]) extends UserWebCommand with JacksonSerializable
@@ -38,6 +38,7 @@ object UserWebRequestBehavior {
   case class UserWebAddProjectMessage(projectName: String, createUserID: String, description: String, userIDList: List[String]) extends UserWebCommand with JacksonSerializable
   case class UserWebGetCompleteProjectInfoMessage(projectID: String) extends UserWebCommand with JacksonSerializable
   case class UserWebGetCompleteTaskInfoMessage(taskID: String) extends UserWebCommand with JacksonSerializable
+  case class UserWebAddTaskMessage(newTask: TaskNewFromWeb) extends UserWebCommand with JacksonSerializable
 
   @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
   @JsonSubTypes(
@@ -49,6 +50,7 @@ object UserWebRequestBehavior {
       new JsonSubTypes.Type(value = classOf[WebReplyAddProjectMessage], name = "WebReplyAddProjectMessage"),
       new JsonSubTypes.Type(value = classOf[WebReplyGetCompleteProjectInfoMessage], name = "WebReplyGetCompleteProjectInfoMessage"),
       new JsonSubTypes.Type(value = classOf[WebReplyGetCompleteTaskInfoMessage], name = "WebReplyGetCompleteTaskInfoMessage"),
+      new JsonSubTypes.Type(value = classOf[WebReplyAddTaskMessage], name = "WebReplyAddTaskMessage"),
     ))
   sealed trait WebReplyMessage
   case class WebReplyRegisterMessage(userID: String, reason: String, outcome: Boolean) extends WebReplyMessage with JacksonSerializable
@@ -59,6 +61,7 @@ object UserWebRequestBehavior {
   case class WebReplyAddProjectMessage(projectID: String) extends WebReplyMessage with JacksonSerializable
   case class WebReplyGetCompleteProjectInfoMessage(projectCompleteInfo: ProjectCompleteInfo) extends WebReplyMessage with JacksonSerializable
   case class WebReplyGetCompleteTaskInfoMessage(taskCompleteInfo: TaskCompleteInfo) extends WebReplyMessage with JacksonSerializable
+  case class WebReplyAddTaskMessage(taskAddResult: TaskAddResult) extends WebReplyMessage with JacksonSerializable
 
   def apply(): Behavior[UserWebCommand] = {
     Behaviors.setup(context =>
@@ -109,6 +112,9 @@ class UserWebRequestBehavior(context: ActorContext[UserWebCommand]) extends Abst
             Behaviors.stopped
           case UserWebGetCompleteTaskInfoMessage(taskID) =>
             ref ! StatusReply.success(WebReplyGetCompleteTaskInfoMessage(TaskInfoTable.getTaskCompleteInfo(taskID).get))
+            Behaviors.stopped
+          case UserWebAddTaskMessage(newTask) =>
+            ref ! StatusReply.success(WebReplyAddTaskMessage(TaskInfoTable.addTaskFromWeb(newTask).get))
             Behaviors.stopped
         }
     }
