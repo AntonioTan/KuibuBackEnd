@@ -8,6 +8,7 @@ import Plugins.CommonUtils.{IOUtils, StringUtils}
 import Plugins.MSUtils.CustomColumnTypes._
 import Plugins.MSUtils.ServiceUtils
 import org.joda.time.DateTime
+import org.joda.time.format.DateTimeFormat
 import org.json4s._
 import org.json4s.native.JsonMethods._
 import slick.jdbc.PostgresProfile.api._
@@ -16,7 +17,7 @@ import slick.lifted.{ProvenShape, Tag}
 import scala.util.Try
 
 case class TaskInfoRow(taskID: String, projectID: String, taskName: String, status: Boolean, startDate: DateTime, endDate: DateTime, description: String, parentID: String, childrenIDList: List[String], leaderIDList: List[String], userIDList: List[String])
-case class TaskCompleteInfo(taskID: String, projectID: String, taskName: String, status: Boolean, startDate: String, endDate: String, description: String, parentID: String, parentName: String, childrenMap: Map[String, TaskStatusInfo], leaderMap: Map[String, String], userMap: Map[String, String])
+case class TaskCompleteInfo(taskID: String, projectID: String, taskName: String, status: Boolean, startDate: String, endDate: String, description: String, parentID: String, parentName: String, childrenMap: Map[String, TaskStatusInfo], leaderMap: Map[String, String], userMap: Map[String, String], sessionDateMap: Map[String, String])
 case class TaskStatusInfo(taskName: String, status: Boolean)
 case class TaskNewFromWeb(taskName: String, projectID: String, parentID: String, startDate: String, endDate: String, description: String, leaderIDList: List[String], userIDList: List[String])
 case class TaskAddResult(outcome: Boolean, reason: String, taskID: String="", taskName: String="")
@@ -72,30 +73,40 @@ object TaskInfoTable {
       leaderIDList = leaderIDList,
       userIDList = userIDList,
     ))
+    if(IDExists(parentID).get) addChildTask(parentID, newTaskID)
+    ProjectInfoTable.addTask(projectID = projectID, taskID = newTaskID)
     newTaskID
   }
 
 
   def addTaskFromWeb(taskNewFromWeb: TaskNewFromWeb): Try[TaskAddResult] = Try {
-    if(taskNewFromWeb.taskName==""||taskNewFromWeb.description==""||taskNewFromWeb.startDate==""||taskNewFromWeb.endDate==""||taskNewFromWeb.leaderIDList.isEmpty||taskNewFromWeb.userIDList.isEmpty) {
+    val dateTimeFormatter = DateTimeFormat.forPattern("yyyy/MM/dd")
+    if(taskNewFromWeb.taskName==""||taskNewFromWeb.description==""||taskNewFromWeb.startDate==""||taskNewFromWeb.endDate==""||taskNewFromWeb.userIDList.isEmpty) {
       TaskAddResult(outcome = false, reason = "新任务信息不完整")
     } else {
       val newTaskID = addTask(
         taskName = taskNewFromWeb.taskName,
         projectID = taskNewFromWeb.projectID,
-        startDate = new DateTime(taskNewFromWeb.startDate),
-        endDate = new DateTime(taskNewFromWeb.endDate),
+        startDate = DateTime.parse(taskNewFromWeb.startDate, dateTimeFormatter),
+        endDate = DateTime.parse(taskNewFromWeb.endDate, dateTimeFormatter),
         description = taskNewFromWeb.description,
         parentID =  taskNewFromWeb.parentID,
         leaderIDList = taskNewFromWeb.leaderIDList,
         userIDList = taskNewFromWeb.userIDList
       ).get
+      if(taskNewFromWeb.parentID!="") TaskInfoTable.addChildTask(taskNewFromWeb.parentID, newTaskID)
       TaskAddResult(outcome = true, reason="成功添加新任务", taskID = newTaskID, taskName = taskNewFromWeb.taskName)
     }
   }
 
+  def addChildTask(taskID: String, childTaskID: String): Try[Int] = Try {
+    var targetTaskChildren = ServiceUtils.exec(taskInfoTable.filter(_.taskID===taskID).map(_.childrenIDList).result.head)
+    if(!targetTaskChildren.contains(childTaskID)) targetTaskChildren = targetTaskChildren :+ childTaskID
+    ServiceUtils.exec(taskInfoTable.filter(_.taskID===taskID).map(_.childrenIDList).update(targetTaskChildren))
+  }
+
   def addTaskWithID(taskID: String, taskName: String, status: Boolean=false, projectID: String, startDate: DateTime, endDate: DateTime, description: String, parentID: String="", childrenIDList: List[String], leaderIDList: List[String] = List.empty[String] , userIDList: List[String]): Try[Int] = Try{
-    ServiceUtils.exec(taskInfoTable += TaskInfoRow(
+    val rst: Int = ServiceUtils.exec(taskInfoTable += TaskInfoRow(
       taskID = taskID,
       taskName = taskName,
       status = status,
@@ -106,9 +117,11 @@ object TaskInfoTable {
       parentID = parentID,
       childrenIDList = childrenIDList,
       leaderIDList = leaderIDList,
-      userIDList = userIDList
+      userIDList = userIDList,
     ))
-//    ProjectInfoTable.addTask(projectID, taskID)
+    if(IDExists(parentID).get) addChildTask(parentID, taskID)
+    ProjectInfoTable.addTask(projectID = projectID, taskID = taskID)
+    rst
 
   }
 
@@ -129,26 +142,38 @@ object TaskInfoTable {
 
   }
 
-  def getTaskCompleteInfo(taskID: String): Try[TaskCompleteInfo] = Try { val taskInfoRow: TaskInfoRow = ServiceUtils.exec(taskInfoTable.filter(_.taskID === taskID).result.head)
+  def getTaskCompleteInfo(taskID: String): Try[TaskCompleteInfo] = Try {
+    val taskInfoRow: TaskInfoRow = ServiceUtils.exec(taskInfoTable.filter(_.taskID === taskID).result.head)
     val userMap: Map[String, String] = UserAccountTable.getUserNamesByIDs(taskInfoRow.userIDList).get
     val leaderMap: Map[String, String] = UserAccountTable.getUserNamesByIDs(taskInfoRow.leaderIDList).get
     val childrenMap: Map[String, TaskStatusInfo] = getTaskStatusesByIDs(taskInfoRow.childrenIDList).get
-
+    val sessionDateMap: Map[String, String] = ChatSessionInfoTable.getSessionDateMapByTaskID(taskInfoRow.taskID).get
     TaskCompleteInfo(taskID = taskInfoRow.taskID, projectID = taskInfoRow.projectID,
       taskName = taskInfoRow.taskName, status = taskInfoRow.status, startDate = convertDateTimeToWebString(taskInfoRow.startDate), endDate = convertDateTimeToWebString(taskInfoRow.endDate),
       description = taskInfoRow.description, parentID = taskInfoRow.parentID, parentName = getTaskName(taskInfoRow.parentID).get, childrenMap = childrenMap,
-      leaderMap = leaderMap, userMap = userMap)
+      leaderMap = leaderMap, userMap = userMap, sessionDateMap = sessionDateMap)
   }
+
 
   def IDExists(taskID: String): Try[Boolean] = Try {
     ServiceUtils.exec(taskInfoTable.filter(_.taskID === taskID).exists.result)
   }
 
   def getTaskName(taskID: String): Try[String] = Try {
-    ServiceUtils.exec(taskInfoTable.filter(_.taskID === taskID).map(_.taskName).result.head)
+    if(IDExists(taskID).get) {
+      ServiceUtils.exec(taskInfoTable.filter(_.taskID === taskID).map(_.taskName).result.head)
+    } else {
+      ""
+    }
   }
 
   def getTaskStatus(taskID: String): Try[Boolean] = Try {
     ServiceUtils.exec(taskInfoTable.filter(_.taskID === taskID).map(_.status).result.head)
   }
+
+  def checkIfRoot(taskID: String): Try[Boolean] = Try {
+    ServiceUtils.exec(taskInfoTable.filter(_.taskID === taskID).result.head).parentID.length==0
+  }
+
+
 }

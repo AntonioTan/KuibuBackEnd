@@ -79,8 +79,25 @@ object ProjectInfoTable {
     newProjectID
   }
 
+  def addTask(projectID: String, taskID: String) : Try[Unit]= Try {
+    var taskIDList: List[String] = ServiceUtils.exec(projectInfoTable.filter(_.projectID===projectID).map(_.taskIDList).result.head)
+    if(!taskIDList.contains(taskID)) {
+      taskIDList = taskIDList :+ taskID
+      ServiceUtils.exec(projectInfoTable.filter(_.projectID===projectID).map(_.taskIDList).update(taskIDList))
+    }
+  }
+
+  def addSession(projectID: String, sessionID: String): Try[Unit] = Try {
+    var sessionIDList: List[String] = ServiceUtils.exec(projectInfoTable.filter(_.projectID===projectID).map(_.sessionIDList).result.head)
+    if(!sessionIDList.contains(sessionID)) {
+      sessionIDList = sessionIDList :+ sessionID
+      ServiceUtils.exec(projectInfoTable.filter(_.projectID === projectID).map(_.sessionIDList).update(sessionIDList))
+    }
+  }
+
+
   def getBasicProjectInfo(projectID: String): Try[ProjectBasicInfo] = Try {
-    val project: ProjectInfoRow = ServiceUtils.exec(projectInfoTable.filter(_.projectID===projectID).result.head)
+    val project: ProjectInfoRow = ServiceUtils.exec(projectInfoTable.filter(task => task.projectID===projectID).result.head)
     val createUserName: String = UserAccountTable.getBasicUserInfo(project.createUserID).get.userName
     val startDate: String = GlobalUtils.convertDateTimeToWebString(project.startDate)
     var userMap: Map[String, String] = Map.empty[String, String]
@@ -89,6 +106,19 @@ object ProjectInfoTable {
     }
     ProjectBasicInfo(projectID = projectID, projectName = project.projectName, createUserID = project.createUserID, createUserName = createUserName, description = project.description, startDate = startDate, userMap = userMap)
   }
+
+  // 需要过滤出根任务
+  def getTasksInfo(projectID: String): Try[Map[String, String]] = Try {
+    val project: ProjectInfoRow = ServiceUtils.exec(projectInfoTable.filter(_.projectID===projectID).result.head)
+    var taskMap: Map[String, String] = Map.empty[String, String]
+    for(taskID <- project.taskIDList) {
+      if(TaskInfoTable.checkIfRoot(taskID).get) {
+        taskMap += (taskID -> TaskInfoTable.getTaskName(taskID).get)
+      }
+    }
+    taskMap
+  }
+
 
   def getCompleteProjectInfo(projectID: String): Try[ProjectCompleteInfo] = Try {
     val project: ProjectInfoRow = ServiceUtils.exec(projectInfoTable.filter(_.projectID===projectID).result.head)

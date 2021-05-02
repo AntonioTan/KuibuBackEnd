@@ -27,10 +27,6 @@ object GlobalDBs {
     rst = UserAccountTable.addUserFriend("tttttt", "dddddd")
     rst = UserAccountTable.addUserFriend("tttttt", "eeeeee")
     rst = UserAccountTable.addUserFriend("tttttt", "ffffff")
-    ChatSessionInfoTable.addChatSessionInfoWithID("000000", "Tianyi,Phoebie", List("tttttt", "aaaaaa"))
-    ChatSessionInfoTable.addChatSessionInfoWithID("111111", "Tianyi,Chandler", List("tttttt", "bbbbbb"))
-    ChatSessionInfoTable.addChatSessionInfoWithID("222222", "Tianyi,Chandler,Monica", List("tttttt", "bbbbbb", "dddddd"))
-    ChatSessionInfoTable.addChatSessionInfoWithID("333333", "Tianyi,Phoebie,Chandler,Joey,Monica,Ross,Rachel", List("tttttt","aaaaaa","bbbbbb","cccccc","dddddd","eeeeee","ffffff"))
     ProjectInfoTable.addProjectWithID("000000", "美的集团项目分析", "tttttt", "进行美的集团的财务分析",
       List("tttttt", "aaaaaa", "bbbbbb", "cccccc", "dddddd", "eeeeee", "ffffff"))
     ProjectInfoTable.addProjectWithID("111111", "篮球比赛训练", "tttttt", "进行信息学院篮球比赛训练",
@@ -45,6 +41,10 @@ object GlobalDBs {
       startDate = DateTime.parse("2021/04/02", dateTimeFormatter), endDate = DateTime.parse("2021/04/03", dateTimeFormatter), description = "主要是中投训练让大家适应比赛", parentID = "000000", childrenIDList = List.empty[String], userIDList = List[String]("tttttt", "cccccc"))
     TaskInfoTable.addTaskWithID(taskID = "333333", taskName = "跑位", projectID = "111111",
       startDate = DateTime.parse("2021/04/02", dateTimeFormatter), endDate = DateTime.parse("2021/04/03", dateTimeFormatter), description = "主要是跑位训练 让大家更灵活", parentID = "000000", childrenIDList = List.empty[String], userIDList = List[String]("tttttt", "bbbbbb"))
+    ChatSessionInfoTable.addChatSessionInfoWithID("111111", "000000", "Tianyi,Phoebie", List("tttttt", "aaaaaa"))
+    ChatSessionInfoTable.addChatSessionInfoWithID("111111", "111111", "Tianyi,Chandler", List("tttttt", "bbbbbb"))
+    ChatSessionInfoTable.addChatSessionInfoWithID("111111", "222222", "Tianyi,Chandler,Monica", List("tttttt", "bbbbbb", "dddddd"))
+    ChatSessionInfoTable.addChatSessionInfoWithID("111111", "333333", "Tianyi,Phoebie,Chandler,Joey,Monica,Ross,Rachel", List("tttttt","aaaaaa","bbbbbb","cccccc","dddddd","eeeeee","ffffff"))
   }
 
 }
