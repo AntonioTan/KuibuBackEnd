@@ -1,6 +1,6 @@
 package Globals
 
-import Tables.{ChatMessageTable, ChatSessionInfoTable, ProjectInfoRow, ProjectInfoTable, TaskInfoTable, UserAccountTable}
+import Tables.{ChatMessageTable, ChatSessionInfoTable, ProjectInfoRow, ProjectInfoTable, TaskInfoTable, TaskProcessInfoTable, TaskToDoInfoTable, UserAccountTable}
 import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
 
@@ -31,7 +31,7 @@ object GlobalDBs {
       List("tttttt", "aaaaaa", "bbbbbb", "cccccc", "dddddd", "eeeeee", "ffffff"))
     ProjectInfoTable.addProjectWithID("111111", "篮球比赛训练", "tttttt", "进行信息学院篮球比赛训练",
       List("tttttt", "aaaaaa", "bbbbbb", "cccccc", "dddddd", "eeeeee", "ffffff"))
-    ProjectInfoTable.addProjectWTithID("222222", "任务管理信息系统开发", "tttttt", "进行任务管理信息系统的开发",
+    ProjectInfoTable.addProjectWithID("222222", "任务管理信息系统开发", "tttttt", "进行任务管理信息系统的开发",
       List("tttttt","aaaaaa", "bbbbbb", "cccccc", "dddddd", "eeeeee", "ffffff"))
     TaskInfoTable.addTaskWithID(taskID = "000000", taskName = "周训练", projectID = "111111",
       startDate = DateTime.parse("2021/04/02", dateTimeFormatter), endDate = DateTime.parse("2021/04/03", dateTimeFormatter), description = "完成周训练", leaderIDList=List[String]("tttttt"), childrenIDList = List[String]("111111", "222222", "333333"), userIDList = List[String]("tttttt", "aaaaaa", "bbbbbb", "cccccc", "dddddd"))
@@ -63,7 +63,26 @@ object GlobalDBs {
     Thread.sleep(100)
     ChatMessageTable.addChatMessageWithID("000008", "000000","aaaaaa","I love you!")
     Thread.sleep(100)
-
+    TaskToDoInfoTable.addTaskToDoWithID("000000", "000000", "0", "tttttt", "Hello Test1")
+    TaskToDoInfoTable.addTaskToDoWithID("000000", "000000", "0", "tttttt", "Hello Test2")
+    TaskToDoInfoTable.addTaskToDoWithID("000000", "000001", "2", "aaaaaa", "Hello Test3")
+    TaskToDoInfoTable.addTaskToDoWithID("000000", "000002", "2", "aaaaaa", "Hello Test4")
+    TaskToDoInfoTable.addTaskToDoWithID("000000", "000003", "1", "bbbbbb", "Hello Test5")
+    TaskToDoInfoTable.addTaskToDoWithID("000000", "000003", "1", "cccccc", "Hello Test6")
+    TaskToDoInfoTable.addTaskToDoWithID("111111", "000004", "0", "tttttt", "Hello Test1")
+    TaskToDoInfoTable.addTaskToDoWithID("111111", "000005", "0", "tttttt", "Hello Test2")
+    TaskToDoInfoTable.addTaskToDoWithID("111111", "000006", "2", "aaaaaa", "Hello Test3")
+    TaskToDoInfoTable.addTaskToDoWithID("111111", "000007", "2", "aaaaaa", "Hello Test4")
+    TaskToDoInfoTable.addTaskToDoWithID("111111", "000008", "1", "bbbbbb", "Hello Test5")
+    TaskToDoInfoTable.addTaskToDoWithID("111111", "000009", "1", "cccccc", "Hello Test6")
+    TaskProcessInfoTable.addTaskProcessInfoWithID("000000", "000001", "tttttt", "I really love Kuibu. It's very good from any aspect! --Content1")
+    TaskProcessInfoTable.addTaskProcessInfoWithID("000000", "000002", "tttttt", "I really love Kuibu. It's very good from any aspect! --Content2")
+    TaskProcessInfoTable.addTaskProcessInfoWithID("000000", "000003", "aaaaaa", "I really love Kuibu. It's very good from any aspect! --Content3")
+    TaskProcessInfoTable.addTaskProcessInfoWithID("000000", "000004", "aaaaaa", "I really love Kuibu. It's very good from any aspect! --Content4")
+    TaskProcessInfoTable.addTaskProcessInfoWithID("111111", "000005", "tttttt", "I really love Kuibu. It's very good from any aspect! --Content5")
+    TaskProcessInfoTable.addTaskProcessInfoWithID("111111", "000006", "tttttt", "I really love Kuibu. It's very good from any aspect! --Content6")
+    TaskProcessInfoTable.addTaskProcessInfoWithID("111111", "000007", "aaaaaa", "I really love Kuibu. It's very good from any aspect! --Content7")
+    TaskProcessInfoTable.addTaskProcessInfoWithID("111111", "000008", "aaaaaa", "I really love Kuibu. It's very good from any aspect! --Content8")
   }
 
 }

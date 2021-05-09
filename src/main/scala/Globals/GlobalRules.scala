@@ -16,4 +16,9 @@ object GlobalRules {
   val chatMessageLength: Int = 6
 
   val initialChatMessageNum: Int = 10
+
+  val taskToDoIDLength: Int = 6
+
+  val taskProcessInfoIDLength: Int = 6
+
 }
