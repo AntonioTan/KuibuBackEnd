@@ -139,7 +139,11 @@ object ProjectInfoTable {
     ProjectCompleteInfo(projectID = project.projectID, projectName = project.projectName, createUserID = project.createUserID, createUserName = createUserName,
       startDate = startDate, description = project.description,
       userMap = userMap, sessionMap = sessionMap, taskMap = taskMap)
+  }
 
+  def getUserIncludedSessionIDList(projectID: String, userID: String): Try[List[String]] = Try{
+    var sessionIDList: List[String] = ServiceUtils.exec(projectInfoTable.filter(_.projectID === projectID).map(_.sessionIDList).result.head)
+    sessionIDList.filter(sessionID => ChatSessionInfoTable.whetherIncludeUser(sessionID, userID).get)
   }
 
 }

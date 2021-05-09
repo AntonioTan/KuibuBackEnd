@@ -1,14 +1,23 @@
 package ActorModels
 
 import ActorModels.UserBehavior.UserChatMessage
-import ActorModels.UserWebRequestBehavior.{UserWebAddProjectMessage, UserWebAddTaskMessage, UserWebBasicProjectInfoMessage, UserWebBasicUserInfoMessage, UserWebCommand, UserWebGetCompleteProjectInfoMessage, UserWebGetCompleteTaskInfoMessage, UserWebGetMemberMapMessage, UserWebGetTasksInfoMessage, UserWebLoginCommand, UserWebLoginMessage, UserWebMessage, UserWebRegisterMessage, WebReplyAddProjectMessage, WebReplyAddTaskMessage, WebReplyBasicProjectInfoMessage, WebReplyBasicUserInfoMessage, WebReplyGetCompleteProjectInfoMessage, WebReplyGetCompleteTaskInfoMessage, WebReplyGetTasksInfoMessage, WebReplyLoginMessage, WebReplyMemberMapMessage, WebReplyMessage, WebReplyRegisterMessage}
+import ActorModels.UserSystemBehavior.{UserSystemInitializeMessage, UserInitializeResponseMessage}
+import ActorModels.UserWebRequestBehavior.{UserWebAddProjectMessage, UserWebAddTaskMessage, UserWebBasicProjectInfoMessage, UserWebBasicUserInfoMessage, UserWebCommand, UserWebGetCompleteProjectInfoMessage, UserWebGetCompleteTaskInfoMessage, UserWebGetMemberMapMessage, UserWebGetSessionInfoMessage, UserWebGetTasksInfoMessage, UserWebLoginCommand, UserWebLoginMessage, UserWebMessage, UserWebRegisterMessage, UserWebWSInitializeMessage, WebReplyAddProjectMessage, WebReplyAddTaskMessage, WebReplyBasicProjectInfoMessage, WebReplyBasicUserInfoMessage, WebReplyGetCompleteProjectInfoMessage, WebReplyGetCompleteTaskInfoMessage, WebReplyGetSessionInfoMessage, WebReplyGetTasksInfoMessage, WebReplyLoginMessage, WebReplyMemberMapMessage, WebReplyMessage, WebReplyRegisterMessage, WebReplyWSInitializeMessage}
+import Globals.GlobalVariables.userSystem
 import Plugins.CommonUtils.CommonTypes.JacksonSerializable
-import Tables.{ProjectBasicInfo, ProjectCompleteInfo, ProjectInfoTable, TaskAddResult, TaskCompleteInfo, TaskInfoTable, TaskNewFromWeb, UserAccountTable, UserBasicInfo}
-import akka.actor.typed.{ActorRef, Behavior}
+import Plugins.MSUtils.AkkaBase.AkkaUtils.system
+import Tables.{ChatSessionInfo, ChatSessionInfoTable, ProjectBasicInfo, ProjectCompleteInfo, ProjectInfoTable, TaskAddResult, TaskCompleteInfo, TaskInfoTable, TaskNewFromWeb, UserAccountTable, UserBasicInfo}
+import akka.actor.typed.scaladsl.AskPattern.Askable
+import akka.actor.typed.{ActorRef, ActorSystem, Behavior}
 import akka.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors}
+import akka.http.scaladsl.server.Directives.onComplete
 import akka.pattern.StatusReply
+import akka.util.Timeout
 import com.fasterxml.jackson.annotation.{JsonSubTypes, JsonTypeInfo}
-import fastparse.Parsed.Success
+
+import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration.DurationInt
+import scala.util.{Failure, Success, Try}
 
 object UserWebRequestBehavior {
 
@@ -27,6 +36,8 @@ object UserWebRequestBehavior {
       new JsonSubTypes.Type(value = classOf[UserWebGetCompleteTaskInfoMessage], name = "UserWebGetCompleteTaskInfoMessage"),
       new JsonSubTypes.Type(value = classOf[UserWebAddTaskMessage], name = "UserWebAddTaskMessage"),
       new JsonSubTypes.Type(value = classOf[UserWebGetTasksInfoMessage], name = "UserWebGetTasksInfoMessage"),
+      new JsonSubTypes.Type(value = classOf[UserWebGetSessionInfoMessage], name = "UserWebGetSessionInfoMessage"),
+      new JsonSubTypes.Type(value = classOf[UserWebWSInitializeMessage], name = "UserWebWSInitializeMessage"),
     ))
   sealed trait UserWebCommand
   case class UserWebMessage(message: UserWebCommand, sender: ActorRef[StatusReply[WebReplyMessage]]) extends UserWebCommand with JacksonSerializable
@@ -41,6 +52,8 @@ object UserWebRequestBehavior {
   case class UserWebGetCompleteTaskInfoMessage(taskID: String) extends UserWebCommand with JacksonSerializable
   case class UserWebAddTaskMessage(newTask: TaskNewFromWeb) extends UserWebCommand with JacksonSerializable
   case class UserWebGetTasksInfoMessage(projectID: String) extends UserWebCommand with JacksonSerializable
+  case class UserWebGetSessionInfoMessage(sessionID: String) extends UserWebCommand with JacksonSerializable
+  case class UserWebWSInitializeMessage(projectID: String, userID: String) extends UserWebCommand with JacksonSerializable
 
   @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
   @JsonSubTypes(
@@ -54,6 +67,8 @@ object UserWebRequestBehavior {
       new JsonSubTypes.Type(value = classOf[WebReplyGetCompleteTaskInfoMessage], name = "WebReplyGetCompleteTaskInfoMessage"),
       new JsonSubTypes.Type(value = classOf[WebReplyAddTaskMessage], name = "WebReplyAddTaskMessage"),
       new JsonSubTypes.Type(value = classOf[WebReplyGetTasksInfoMessage], name = "WebReplyGetTasksInfoMessage"),
+      new JsonSubTypes.Type(value = classOf[WebReplyGetSessionInfoMessage], name = "WebReplyGetSessionInfoMessage"),
+      new JsonSubTypes.Type(value = classOf[WebReplyWSInitializeMessage], name = "WebReplyWSInitializeMessage"),
     ))
   sealed trait WebReplyMessage
   case class WebReplyRegisterMessage(userID: String, reason: String, outcome: Boolean) extends WebReplyMessage with JacksonSerializable
@@ -66,6 +81,8 @@ object UserWebRequestBehavior {
   case class WebReplyGetCompleteTaskInfoMessage(taskCompleteInfo: TaskCompleteInfo) extends WebReplyMessage with JacksonSerializable
   case class WebReplyAddTaskMessage(taskAddResult: TaskAddResult) extends WebReplyMessage with JacksonSerializable
   case class WebReplyGetTasksInfoMessage(taskMap: Map[String, String]) extends WebReplyMessage with JacksonSerializable
+  case class WebReplyGetSessionInfoMessage(chatSessionInfo: ChatSessionInfo) extends WebReplyMessage with JacksonSerializable
+  case class WebReplyWSInitializeMessage(outcome: Boolean) extends WebReplyMessage with JacksonSerializable
 
   def apply(): Behavior[UserWebCommand] = {
     Behaviors.setup(context =>
@@ -122,6 +139,19 @@ class UserWebRequestBehavior(context: ActorContext[UserWebCommand]) extends Abst
             Behaviors.stopped
           case UserWebGetTasksInfoMessage(projectID) =>
             ref ! StatusReply.success(WebReplyGetTasksInfoMessage(taskMap = ProjectInfoTable.getTasksInfo(projectID).get))
+            Behaviors.stopped
+          case UserWebGetSessionInfoMessage(sessionID) =>
+            ref ! StatusReply.success(WebReplyGetSessionInfoMessage(chatSessionInfo = ChatSessionInfoTable.getSessionInfo(sessionID).get))
+            Behaviors.stopped
+          case UserWebWSInitializeMessage(projectID, userID) =>
+            import akka.actor.typed.scaladsl.AskPattern._
+            implicit val pathUserWebSystem: ActorSystem[SystemBehavior.SystemCommand] = system
+            implicit val ec: ExecutionContext = system.executionContext
+            implicit val timeout: Timeout = Timeout(3.seconds)
+            val initializeResponse: Future[UserSystemBehavior.UserInitializeResponseMessage] =  userSystem.askWithStatus(ref => UserSystemInitializeMessage(projectID, userID, ref))
+            initializeResponse.onComplete((userWSInitiazlieResponseMessage: Try[UserInitializeResponseMessage]) => {
+              ref ! StatusReply.success(WebReplyWSInitializeMessage(outcome = userWSInitiazlieResponseMessage.get.outcome))
+            })
             Behaviors.stopped
         }
     }

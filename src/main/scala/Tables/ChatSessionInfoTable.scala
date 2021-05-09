@@ -1,11 +1,11 @@
 package Tables
 
-import Globals.GlobalUtils.convertDateTimeToWebString
+import Globals.GlobalUtils.{convertDateTimeToWebString, convertDateTimeToWebTimeString}
 import Globals.{GlobalDBs, GlobalRules}
 import Plugins.CommonUtils.StringUtils
 import Plugins.MSUtils.CustomColumnTypes._
 import Plugins.MSUtils.ServiceUtils
-import Tables.UserAccountTable.userAccountTable
+import Tables.UserAccountTable.{getUserNamesByIDs, userAccountTable}
 import org.joda.time.DateTime
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{ProvenShape, Tag}
@@ -13,6 +13,8 @@ import slick.lifted.{ProvenShape, Tag}
 import scala.util.Try
 
 case class ChatSessionInfoRow(sessionID: String, sessionName: String, projectID: String, taskID: String, startDate: DateTime, userIDList: List[String])
+case class ChatSessionInfo(sessionID: String, sessionName: String, userMap: Map[String, String], taskID: String, chatMessageList: List[ChatMessage])
+
 
 class ChatSessionInfoTable(tag: Tag) extends Table[ChatSessionInfoRow](tag, GlobalDBs.kuibu_schema, _tableName = "chat_session_info") {
 
@@ -71,6 +73,31 @@ object ChatSessionInfoTable {
       sessionDateMap = sessionDateMap ++ Map(session.sessionID -> convertDateTimeToWebString(session.startDate))
     }
     sessionDateMap
+  }
+
+  def getSessionInfo(sessionID: String): Try[ChatSessionInfo] = Try {
+    val session: ChatSessionInfoRow = ServiceUtils.exec(chatSessionInfoTable.filter(_.sessionID === sessionID).result.head)
+    val chatMessageRowList: List[ChatMessageRow] = ChatMessageTable.getMessageByCount(sessionID, GlobalRules.initialChatMessageNum).get
+    val userMap: Map[String, String] = getUserNamesByIDs(session.userIDList).get
+    var chatMessageList: List[ChatMessage] = List.empty[ChatMessage]
+    for(chatMessageRow <- chatMessageRowList) {
+      chatMessageList = chatMessageList :+ ChatMessage(
+        chatMessageID = chatMessageRow.chatMessageID,
+        senderID = chatMessageRow.senderID,
+        senderName = UserAccountTable.getNameByID(chatMessageRow.senderID).get,
+        sessionID = chatMessageRow.sessionID,
+        sendDate = convertDateTimeToWebTimeString(chatMessageRow.sendDate),
+        message = chatMessageRow.message
+      )
+    }
+    ChatSessionInfo(sessionID = sessionID, sessionName = session.sessionName, userMap = userMap, taskID = session.taskID, chatMessageList = chatMessageList)
+
+  }
+
+
+  def whetherIncludeUser(sessionID: String, userID: String): Try[Boolean] = Try {
+    val userIDList: List[String] = ServiceUtils.exec(chatSessionInfoTable.filter(_.sessionID === sessionID).map(_.userIDList).result.head)
+    userIDList.contains(userID)
   }
 
   def IDExists(sessionID: String): Try[Boolean] = Try {

@@ -1,6 +1,6 @@
 package Globals
 
-import Tables.{ChatSessionInfoTable, ProjectInfoRow, ProjectInfoTable, TaskInfoTable, UserAccountTable}
+import Tables.{ChatMessageTable, ChatSessionInfoTable, ProjectInfoRow, ProjectInfoTable, TaskInfoTable, UserAccountTable}
 import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
 
@@ -31,7 +31,7 @@ object GlobalDBs {
       List("tttttt", "aaaaaa", "bbbbbb", "cccccc", "dddddd", "eeeeee", "ffffff"))
     ProjectInfoTable.addProjectWithID("111111", "篮球比赛训练", "tttttt", "进行信息学院篮球比赛训练",
       List("tttttt", "aaaaaa", "bbbbbb", "cccccc", "dddddd", "eeeeee", "ffffff"))
-    ProjectInfoTable.addProjectWithID("222222", "任务管理信息系统开发", "tttttt", "进行任务管理信息系统的开发",
+    ProjectInfoTable.addProjectWTithID("222222", "任务管理信息系统开发", "tttttt", "进行任务管理信息系统的开发",
       List("tttttt","aaaaaa", "bbbbbb", "cccccc", "dddddd", "eeeeee", "ffffff"))
     TaskInfoTable.addTaskWithID(taskID = "000000", taskName = "周训练", projectID = "111111",
       startDate = DateTime.parse("2021/04/02", dateTimeFormatter), endDate = DateTime.parse("2021/04/03", dateTimeFormatter), description = "完成周训练", leaderIDList=List[String]("tttttt"), childrenIDList = List[String]("111111", "222222", "333333"), userIDList = List[String]("tttttt", "aaaaaa", "bbbbbb", "cccccc", "dddddd"))
@@ -45,6 +45,25 @@ object GlobalDBs {
     ChatSessionInfoTable.addChatSessionInfoWithID("111111", "111111", "Tianyi,Chandler", List("tttttt", "bbbbbb"))
     ChatSessionInfoTable.addChatSessionInfoWithID("111111", "222222", "Tianyi,Chandler,Monica", List("tttttt", "bbbbbb", "dddddd"))
     ChatSessionInfoTable.addChatSessionInfoWithID("111111", "333333", "Tianyi,Phoebie,Chandler,Joey,Monica,Ross,Rachel", List("tttttt","aaaaaa","bbbbbb","cccccc","dddddd","eeeeee","ffffff"))
+    ChatMessageTable.addChatMessageWithID("000000", "000000","tttttt","Hello")
+    Thread.sleep(100)
+    ChatMessageTable.addChatMessageWithID("000001", "000000","aaaaaa","Hello")
+    Thread.sleep(100)
+    ChatMessageTable.addChatMessageWithID("000002", "000000","aaaaaa","Hello")
+    Thread.sleep(100)
+    ChatMessageTable.addChatMessageWithID("000003", "000000","tttttt","Phoebie")
+    Thread.sleep(100)
+    ChatMessageTable.addChatMessageWithID("000004", "000000","aaaaaa","Tianyi")
+    Thread.sleep(100)
+    ChatMessageTable.addChatMessageWithID("000005", "000000","tttttt","I")
+    Thread.sleep(100)
+    ChatMessageTable.addChatMessageWithID("000006", "000000","tttttt","Love")
+    Thread.sleep(100)
+    ChatMessageTable.addChatMessageWithID("000007", "000000","aaaaaa","Tianyi")
+    Thread.sleep(100)
+    ChatMessageTable.addChatMessageWithID("000008", "000000","aaaaaa","I love you!")
+    Thread.sleep(100)
+
   }
 
 }

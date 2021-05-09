@@ -161,7 +161,7 @@ object KuibuServer {
               val addedResponse: Future[UserSystemBehavior.UserFlowResponseMessage] = userSystem.askWithStatus(ref => UserAddedMessage(userID = userID, ref))
               onComplete(addedResponse) {
                 case Success(UserFlowResponseMessage(userFlow)) =>
-                  handleWebSocketMessages(userFlow)
+                  handleWebSocketMessages(Flow[Message].via(userFlow))
                 case Failure(exception) =>
                   complete(InternalServerError, "Failed to connect to Server!")
               }
@@ -175,6 +175,7 @@ object KuibuServer {
     implicit val materializer: Materializer = Materializer(system)
     implicit val sys2: actor.ActorSystem = system.toClassic
     val binding = Await.result(Http().bindAndHandle(route, "127.0.0.1", 8080), 3.seconds)
+
 
 
     // the rest of the sample code will go here
