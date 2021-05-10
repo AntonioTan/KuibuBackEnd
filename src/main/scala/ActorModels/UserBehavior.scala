@@ -4,7 +4,7 @@ import ActorModels.UserBehavior._
 import ActorModels.UserSystemBehavior.{UserInitializeResponseMessage, UserSystemCommand, userMap}
 import Plugins.CommonUtils.CommonTypes.JacksonSerializable
 import Plugins.CommonUtils.IOUtils
-import Tables.{ChatMessage, ChatMessageTable, ChatSessionInfoTable, ChatWsMessage, ProjectInfoTable, UserUnreadMessageTable}
+import Tables.{ChatMessage, ChatMessageTable, ChatSessionInfoTable, ChatWsMessage, ProjectInfoTable, TaskInfoTable, UserUnreadMessageTable}
 import akka.actor.TypedActor.self
 import akka.actor.typed.pubsub.Topic
 import akka.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors}
@@ -61,7 +61,7 @@ object UserBehavior {
   case class UserWsInfoMessage(info: String) extends UserCommand with JacksonSerializable
 
   // useful
-  case class UserWsInitializeMessage(projectID: String, userID: String, sender: ActorRef[StatusReply[UserInitializeResponseMessage]]) extends UserCommand with JacksonSerializable
+  case class UserWsInitializeMessage(lastProjectID: String, projectID: String, userID: String, sender: ActorRef[StatusReply[UserInitializeResponseMessage]]) extends UserCommand with JacksonSerializable
 
   case class UserWsChatMessage(chatMessage: ChatWsMessage) extends UserCommand with JacksonSerializable
 
@@ -78,6 +78,7 @@ object UserBehavior {
   //  case class Fail(ex: Throwable) extends UserChatProtocol
 
   val sessionTopicHead = "sessionID"
+  val taskTopicHead = "taskID"
   var replyToMap: TrieMap[String, ActorRef[UserCommand]] = TrieMap.empty[String, ActorRef[UserCommand]]
   var topicMap: TrieMap[String, ActorRef[Topic.Command[UserCommand]]] = TrieMap.empty[String, ActorRef[Topic.Command[UserCommand]]]
 
@@ -130,14 +131,31 @@ class UserBehavior(context: ActorContext[UserCommand]) extends AbstractBehavior[
       case UserWsPushChatMessage(chatMessage: ChatWsMessage) =>
         println("publish new message", chatMessage)
         this
-      case UserWsInitializeMessage(projectID, userID, sender) =>
-        val sessionIDList: List[String] = ProjectInfoTable.getUserIncludedSessionIDList(projectID, userID).get
-        for (sessionID <- sessionIDList) {
-          val sessionTopicID: String = s"${sessionTopicHead}-${sessionID}"
-          val newTopic: ActorRef[Topic.Command[UserCommand]] = context.spawnAnonymous(Topic[UserCommand](sessionTopicID))
-          //          context.watch(newTopic)
-          topicMap.update(sessionTopicID, newTopic)
-          if (replyToMap.contains(userID)) newTopic ! Topic.subscribe(replyToMap(userID))
+      case UserWsInitializeMessage(lastProjectID, projectID, userID, sender) =>
+        // Unsubscribe to the old project
+        val oldSessionIDList: List[String] = ProjectInfoTable.getUserIncludedSessionIDList(lastProjectID, userID).get
+        val oldTaskIDList: List[String] = TaskInfoTable.getMyTaskIDList(projectID = projectID, userID = userID).get
+        for(oldSessionID <- oldSessionIDList) {
+          if(replyToMap.contains(userID)) topicMap(s"${sessionTopicHead}-${oldSessionID}") ! Topic.unsubscribe(replyToMap(userID))
+        }
+        for(oldTaskID <- oldTaskIDList) {
+          if(replyToMap.contains(userID)) topicMap(s"${taskTopicHead}-${oldTaskID}") ! Topic.unsubscribe(replyToMap(userID))
+        }
+
+        // Subscribe to new Project
+        val newSessionIDList: List[String] = ProjectInfoTable.getUserIncludedSessionIDList(projectID, userID).get
+        val newTaskIDList: List[String] = TaskInfoTable.getMyTaskIDList(projectID, userID).get
+        for (newSessionID <- newSessionIDList) {
+          val sessionTopicID: String = s"${sessionTopicHead}-${newSessionID}"
+          val newSessionTopic: ActorRef[Topic.Command[UserCommand]] = context.spawnAnonymous(Topic[UserCommand](sessionTopicID))
+          topicMap.update(sessionTopicID, newSessionTopic)
+          if (replyToMap.contains(userID)) newSessionTopic ! Topic.subscribe(replyToMap(userID))
+        }
+        for(newTaskID <- newTaskIDList) {
+          val taskTopicID: String = s"${taskTopicHead}-${newTaskID}"
+          val newTaskTopic: ActorRef[Topic.Command[UserCommand]] = context.spawnAnonymous(Topic[UserCommand](taskTopicID))
+          topicMap.update(taskTopicID, newTaskTopic)
+          if(replyToMap.contains(userID)) newTaskTopic ! Topic.subscribe(replyToMap(userID))
         }
         this
       case UserWsConvertMessage(msg, replyTo) =>

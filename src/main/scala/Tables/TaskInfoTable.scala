@@ -21,6 +21,8 @@ case class TaskCompleteInfo(taskID: String, projectID: String, taskName: String,
 case class TaskStatusInfo(taskName: String, status: Boolean)
 case class TaskNewFromWeb(taskName: String, projectID: String, parentID: String, startDate: String, endDate: String, description: String, leaderIDList: List[String], userIDList: List[String])
 case class TaskAddResult(outcome: Boolean, reason: String, taskID: String="", taskName: String="")
+case class MyTask(taskID: String, taskName: String, description: String, startDate: String, endDate: String, leader: String, members: String)
+case class SyncTask(taskID: String, taskName: String, leaderName: String, leaderIDList: List[String], startDate: String, endDate: String, description: String, toDoList: List[TaskWebToDoInfo], processInfoList: List[TaskWebProcessInfo], allMemberMap: Map[String, String])
 
 class TaskInfoTable(tag: Tag) extends Table[TaskInfoRow](tag, GlobalDBs.kuibu_schema, _tableName = "task_info") {
   def taskID: Rep[String] = column[String]("task_id", O.PrimaryKey)
@@ -173,6 +175,58 @@ object TaskInfoTable {
 
   def checkIfRoot(taskID: String): Try[Boolean] = Try {
     ServiceUtils.exec(taskInfoTable.filter(_.taskID === taskID).result.head).parentID.length==0
+  }
+
+  def getMyTaskList(projectID: String, userID: String): Try[List[MyTask]] = Try {
+    val projectTaskList: List[String] = ProjectInfoTable.getProjectTaskIDList(projectID).get
+    var myTaskList: List[MyTask] = List.empty[MyTask]
+    for(taskID <- projectTaskList) {
+      val taskInfo: TaskInfoRow = ServiceUtils.exec(taskInfoTable.filter(_.taskID === taskID).result.head)
+      if(taskInfo.leaderIDList.contains(userID) || taskInfo.userIDList.contains(userID)) {
+        myTaskList = myTaskList :+ MyTask(
+          taskID = taskInfo.taskID,
+          taskName = taskInfo.taskName,
+          description = taskInfo.description,
+          startDate = convertDateTimeToWebString(taskInfo.startDate),
+          endDate = convertDateTimeToWebString(taskInfo.endDate),
+          leader = UserAccountTable.getUserNamesByIDs(taskInfo.leaderIDList).get.values.toList.mkString(", "),
+          members = UserAccountTable.getUserNamesByIDs(taskInfo.userIDList).get.values.toList.mkString(", ")
+        )
+      }
+    }
+    myTaskList
+  }
+
+  def getMyTaskIDList(projectID: String, userID: String): Try[List[String]] = Try {
+    val projectTaskIDList: List[String] = ProjectInfoTable.getProjectTaskIDList(projectID).get
+    var myTaskIDList: List[String] = List.empty[String]
+    for(projectTaskID <- projectTaskIDList) {
+      val taskInfo: TaskInfoRow = ServiceUtils.exec(taskInfoTable.filter(taskInfo => taskInfo.taskID === projectTaskID).result.head)
+      if(taskInfo.leaderIDList.contains(userID) || taskInfo.userIDList.contains(userID)) {
+        myTaskIDList = myTaskIDList :+ taskInfo.taskID
+      }
+    }
+    myTaskIDList
+  }
+
+  def getSyncTaskInfo(taskID: String): Try[SyncTask] = Try {
+    val taskInfo: TaskInfoRow = ServiceUtils.exec(taskInfoTable.filter(_.taskID === taskID).result.head)
+    val taskToDoInfoList: List[TaskWebToDoInfo] = TaskToDoInfoTable.getTaskToDoInfoList(taskID).get
+    val taskProcessInfoList: List[TaskWebProcessInfo] = TaskProcessInfoTable.getTaskProcessInfoList(taskID).get
+    val allMemberIDList: List[String] = taskInfo.leaderIDList ++ taskInfo.userIDList
+    SyncTask(
+      taskID=taskInfo.taskID,
+      taskName=taskInfo.taskName,
+      leaderName= UserAccountTable.getUserNamesByIDs(taskInfo.leaderIDList).get.values.toList.mkString(", "),
+      leaderIDList = taskInfo.leaderIDList,
+      startDate = convertDateTimeToWebString(taskInfo.startDate),
+      endDate = convertDateTimeToWebString(taskInfo.endDate),
+      description = taskInfo.description,
+      toDoList = taskToDoInfoList,
+      processInfoList = taskProcessInfoList,
+      allMemberMap = UserAccountTable.getUserNamesByIDs(allMemberIDList).get
+    )
+
   }
 
 

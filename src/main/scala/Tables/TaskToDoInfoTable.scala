@@ -1,5 +1,6 @@
 package Tables
 
+import Globals.GlobalUtils.convertDateTimeToWebString
 import Globals.{GlobalDBs, GlobalRules}
 import Plugins.CommonUtils.StringUtils
 import Plugins.MSUtils.CustomColumnTypes.jodaDateTimeType
@@ -13,6 +14,8 @@ import scala.util.Try
 
 
 case class TaskToDoInfoRow(taskToDoID: String, status: String, finishUserID: Option[String]=null, createUserID: String, content: String, startDate: DateTime, endDate: Option[DateTime]=null)
+
+case class TaskWebToDoInfo(taskToDoID: String, status: String, createUserID: String, finishUserID: String, content: String, startDate: String, endDate: String)
 
 class TaskToDoInfoTable(tag: Tag) extends Table[TaskToDoInfoRow](tag, GlobalDBs.kuibu_schema, _tableName = "task_todo_info") {
 
@@ -42,7 +45,7 @@ object TaskToDoInfoTable {
     newID
   }
 
-  def addTaskToDoWithID(taskID: String, taskToDoID: String, status: String, createUserID: String, content: String, startDate: DateTime=DateTime.now(), finishUserID: Option[String]=null): Try[Int] = Try {
+  def addTaskToDoWithID(taskID: String, taskToDoID: String, status: String, createUserID: String, content: String, startDate: DateTime=DateTime.now(), finishUserID: Option[String]=null, endDate: Option[DateTime]=null): Try[Int] = Try {
     ServiceUtils.exec(taskToDoInfoTable += TaskToDoInfoRow(
       taskToDoID = taskToDoID,
       status = status,
@@ -50,6 +53,7 @@ object TaskToDoInfoTable {
       createUserID = createUserID,
       content = content,
       startDate = startDate,
+      endDate = endDate,
     ))
     TaskToDoMapTable.addTaskToDoMap(taskID, taskToDoID).get
   }
@@ -65,6 +69,26 @@ object TaskToDoInfoTable {
       startDate = startDate,
     ))
     TaskToDoMapTable.addTaskToDoMap(taskID, taskToDoID).get
+  }
+
+  def getTaskToDoInfoList(taskID: String): Try[List[TaskWebToDoInfo]] = Try {
+//    case class TaskWebToDoInfo(taskToDoID: String, status: String, createUserID: String, finishUserID: String, content: String, startDate: String, endDate: String)
+    var taskToDoInfoList: List[TaskWebToDoInfo] = List.empty[TaskWebToDoInfo]
+    val taskToDoInfoIDList: List[String] = TaskToDoMapTable.getTaskToDoIDList(taskID).get
+    for(taskToDoInfoID <- taskToDoInfoIDList) {
+      val taskToDoInfo = ServiceUtils.exec(taskToDoInfoTable.filter(_.taskToDoID === taskToDoInfoID).result.head)
+      val endDate: String = if(taskToDoInfo.endDate.getOrElse("") != "") convertDateTimeToWebString(taskToDoInfo.endDate.get) else ""
+      taskToDoInfoList = taskToDoInfoList :+ TaskWebToDoInfo(
+        taskToDoID = taskToDoInfo.taskToDoID,
+        status = taskToDoInfo.status,
+        createUserID = taskToDoInfo.createUserID,
+        finishUserID = taskToDoInfo.finishUserID.getOrElse(""),
+        content = taskToDoInfo.content,
+        startDate = convertDateTimeToWebString(taskToDoInfo.startDate),
+        endDate = endDate
+      )
+    }
+    taskToDoInfoList
   }
 
   def IDExists(taskToDoID: String): Try[Boolean] = Try {

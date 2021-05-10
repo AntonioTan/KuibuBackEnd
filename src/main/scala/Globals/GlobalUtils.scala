@@ -5,7 +5,8 @@ import org.joda.time.format.DateTimeFormatter
 
 object GlobalUtils {
   def convertDateTimeToWebString(date: DateTime): String = {
-    s"${date.monthOfYear().get()}/${date.dayOfMonth().get()}/${date.getYear}"
+    val fmt = DateTimeFormat.forPattern("yyyy/MM/dd")
+    fmt.print(date)
   }
 
   def convertDateTimeToWebTimeString(date: DateTime): String = {

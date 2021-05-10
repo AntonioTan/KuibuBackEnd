@@ -2,11 +2,11 @@ package ActorModels
 
 import ActorModels.UserBehavior.UserChatMessage
 import ActorModels.UserSystemBehavior.{UserInitializeResponseMessage, UserSystemInitializeMessage}
-import ActorModels.UserWebRequestBehavior.{UserWebAddProjectMessage, UserWebAddTaskMessage, UserWebBasicProjectInfoMessage, UserWebBasicUserInfoMessage, UserWebCommand, UserWebGetCompleteProjectInfoMessage, UserWebGetCompleteTaskInfoMessage, UserWebGetMemberMapMessage, UserWebGetSessionInfoMessage, UserWebGetTasksInfoMessage, UserWebGetUserNameMessage, UserWebLoginCommand, UserWebLoginMessage, UserWebMessage, UserWebRegisterMessage, UserWebWSInitializeMessage, WebReplyAddProjectMessage, WebReplyAddTaskMessage, WebReplyBasicProjectInfoMessage, WebReplyBasicUserInfoMessage, WebReplyGetCompleteProjectInfoMessage, WebReplyGetCompleteTaskInfoMessage, WebReplyGetSessionInfoMessage, WebReplyGetTasksInfoMessage, WebReplyGetUserNameMessage, WebReplyLoginMessage, WebReplyMemberMapMessage, WebReplyMessage, WebReplyRegisterMessage, WebReplyWSInitializeMessage}
+import ActorModels.UserWebRequestBehavior.{UserWebAddProjectMessage, UserWebAddTaskMessage, UserWebBasicProjectInfoMessage, UserWebBasicUserInfoMessage, UserWebCommand, UserWebGetCompleteProjectInfoMessage, UserWebGetCompleteTaskInfoMessage, UserWebGetMemberMapMessage, UserWebGetMyTaskListMessage, UserWebGetSessionInfoMessage, UserWebGetSyncTaskInfoMessage, UserWebGetTasksInfoMessage, UserWebGetUserNameMessage, UserWebLoginCommand, UserWebLoginMessage, UserWebMessage, UserWebRegisterMessage, UserWebWSInitializeMessage, WebReplyAddProjectMessage, WebReplyAddTaskMessage, WebReplyBasicProjectInfoMessage, WebReplyBasicUserInfoMessage, WebReplyGetCompleteProjectInfoMessage, WebReplyGetCompleteTaskInfoMessage, WebReplyGetMyTaskListMessage, WebReplyGetSessionInfoMessage, WebReplyGetSyncTaskInfoMessage, WebReplyGetTasksInfoMessage, WebReplyGetUserNameMessage, WebReplyLoginMessage, WebReplyMemberMapMessage, WebReplyMessage, WebReplyRegisterMessage, WebReplyWSInitializeMessage}
 import Globals.GlobalVariables.userSystem
 import Plugins.CommonUtils.CommonTypes.JacksonSerializable
 import Plugins.MSUtils.AkkaBase.AkkaUtils.system
-import Tables.{ChatSessionInfo, ChatSessionInfoTable, ProjectBasicInfo, ProjectCompleteInfo, ProjectInfoTable, TaskAddResult, TaskCompleteInfo, TaskInfoTable, TaskNewFromWeb, UserAccountTable, UserBasicInfo}
+import Tables.{ChatSessionInfo, ChatSessionInfoTable, MyTask, ProjectBasicInfo, ProjectCompleteInfo, ProjectInfoTable, SyncTask, TaskAddResult, TaskCompleteInfo, TaskInfoTable, TaskNewFromWeb, UserAccountTable, UserBasicInfo}
 import akka.actor.typed.scaladsl.AskPattern.Askable
 import akka.actor.typed.{ActorRef, ActorSystem, Behavior}
 import akka.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors}
@@ -39,6 +39,8 @@ object UserWebRequestBehavior {
       new JsonSubTypes.Type(value = classOf[UserWebGetSessionInfoMessage], name = "UserWebGetSessionInfoMessage"),
       new JsonSubTypes.Type(value = classOf[UserWebWSInitializeMessage], name = "UserWebWSInitializeMessage"),
       new JsonSubTypes.Type(value = classOf[UserWebGetUserNameMessage], name = "UserWebGetUserNameMessage"),
+      new JsonSubTypes.Type(value = classOf[UserWebGetMyTaskListMessage], name = "UserWebGetMyTaskListMessage"),
+      new JsonSubTypes.Type(value = classOf[UserWebGetSyncTaskInfoMessage], name = "UserWebGetSyncTaskInfoMessage"),
     ))
   sealed trait UserWebCommand
   case class UserWebMessage(message: UserWebCommand, sender: ActorRef[StatusReply[WebReplyMessage]]) extends UserWebCommand with JacksonSerializable
@@ -54,8 +56,10 @@ object UserWebRequestBehavior {
   case class UserWebAddTaskMessage(newTask: TaskNewFromWeb) extends UserWebCommand with JacksonSerializable
   case class UserWebGetTasksInfoMessage(projectID: String) extends UserWebCommand with JacksonSerializable
   case class UserWebGetSessionInfoMessage(sessionID: String) extends UserWebCommand with JacksonSerializable
-  case class UserWebWSInitializeMessage(projectID: String, userID: String) extends UserWebCommand with JacksonSerializable
+  case class UserWebWSInitializeMessage(lastProjectID: String, projectID: String, userID: String) extends UserWebCommand with JacksonSerializable
   case class UserWebGetUserNameMessage(userID: String) extends UserWebCommand with JacksonSerializable
+  case class UserWebGetMyTaskListMessage(projectID: String, userID: String) extends UserWebCommand with JacksonSerializable
+  case class UserWebGetSyncTaskInfoMessage(taskID: String) extends UserWebCommand with JacksonSerializable
 
   @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
   @JsonSubTypes(
@@ -72,6 +76,10 @@ object UserWebRequestBehavior {
       new JsonSubTypes.Type(value = classOf[WebReplyGetSessionInfoMessage], name = "WebReplyGetSessionInfoMessage"),
       new JsonSubTypes.Type(value = classOf[WebReplyWSInitializeMessage], name = "WebReplyWSInitializeMessage"),
       new JsonSubTypes.Type(value = classOf[WebReplyGetUserNameMessage], name = "WebReplyGetUserNameMessage"),
+      new JsonSubTypes.Type(value = classOf[WebReplyGetMyTaskListMessage], name = "WebReplyGetMyTaskListMessage"),
+      new JsonSubTypes.Type(value = classOf[WebReplyGetSyncTaskInfoMessage], name = "WebReplyGetSyncTaskInfoMessage"),
+
+
     ))
   sealed trait WebReplyMessage
   case class WebReplyRegisterMessage(userID: String, reason: String, outcome: Boolean) extends WebReplyMessage with JacksonSerializable
@@ -87,6 +95,8 @@ object UserWebRequestBehavior {
   case class WebReplyGetSessionInfoMessage(chatSessionInfo: ChatSessionInfo) extends WebReplyMessage with JacksonSerializable
   case class WebReplyWSInitializeMessage(outcome: Boolean) extends WebReplyMessage with JacksonSerializable
   case class WebReplyGetUserNameMessage(userName: String) extends  WebReplyMessage with JacksonSerializable
+  case class WebReplyGetMyTaskListMessage(myTaskList: List[MyTask]) extends WebReplyMessage with JacksonSerializable
+  case class WebReplyGetSyncTaskInfoMessage(syncTaskInfo: SyncTask) extends WebReplyMessage with JacksonSerializable
 
   def apply(): Behavior[UserWebCommand] = {
     Behaviors.setup(context =>
@@ -147,18 +157,24 @@ class UserWebRequestBehavior(context: ActorContext[UserWebCommand]) extends Abst
           case UserWebGetSessionInfoMessage(sessionID) =>
             ref ! StatusReply.success(WebReplyGetSessionInfoMessage(chatSessionInfo = ChatSessionInfoTable.getSessionInfo(sessionID).get))
             Behaviors.stopped
-          case UserWebWSInitializeMessage(projectID, userID) =>
+          case UserWebWSInitializeMessage(lastProjectID, projectID, userID) =>
             import akka.actor.typed.scaladsl.AskPattern._
             implicit val pathUserWebSystem: ActorSystem[SystemBehavior.SystemCommand] = system
             implicit val ec: ExecutionContext = system.executionContext
             implicit val timeout: Timeout = Timeout(3.seconds)
-            val initializeResponse: Future[UserSystemBehavior.UserInitializeResponseMessage] =  userSystem.askWithStatus(ref => UserSystemInitializeMessage(projectID, userID, ref))
+            val initializeResponse: Future[UserSystemBehavior.UserInitializeResponseMessage] =  userSystem.askWithStatus(ref => UserSystemInitializeMessage(lastProjectID, projectID, userID, ref))
             initializeResponse.onComplete((userWSInitiazlieResponseMessage: Try[UserInitializeResponseMessage]) => {
               ref ! StatusReply.success(WebReplyWSInitializeMessage(outcome = userWSInitiazlieResponseMessage.get.outcome))
             })
             Behaviors.stopped
           case UserWebGetUserNameMessage(userID) =>
             ref ! StatusReply.success(WebReplyGetUserNameMessage(UserAccountTable.getNameByID(userID).get))
+            Behaviors.stopped
+          case UserWebGetMyTaskListMessage(projectID, userID) =>
+            ref ! StatusReply.success(WebReplyGetMyTaskListMessage(TaskInfoTable.getMyTaskList(projectID, userID).get))
+            Behaviors.stopped
+          case UserWebGetSyncTaskInfoMessage(taskID) =>
+            ref ! StatusReply.success(WebReplyGetSyncTaskInfoMessage(TaskInfoTable.getSyncTaskInfo(taskID).get))
             Behaviors.stopped
         }
     }

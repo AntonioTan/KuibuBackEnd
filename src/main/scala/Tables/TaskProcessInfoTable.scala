@@ -1,5 +1,6 @@
 package Tables
 
+import Globals.GlobalUtils.convertDateTimeToWebString
 import Globals.{GlobalDBs, GlobalRules}
 import Plugins.CommonUtils.StringUtils
 import Plugins.MSUtils.CustomColumnTypes.jodaDateTimeType
@@ -12,6 +13,7 @@ import slick.lifted.{ProvenShape, Tag}
 import scala.util.Try
 
 case class TaskProcessInfoRow(taskProcessInfoID: String, editUserID: String, content: String, editDate: DateTime)
+case class TaskWebProcessInfo(taskProcessInfoID: String, editUserID: String, content: String, editDate: String)
 
 
 class TaskProcessInfoTable(tag: Tag) extends Table[TaskProcessInfoRow](tag, GlobalDBs.kuibu_schema, _tableName = "task_process_info") {
@@ -57,6 +59,21 @@ object TaskProcessInfoTable {
       editDate = editDate
     ))
     TaskProcessMapTable.addTaskProcessMap(taskID = taskID, taskProcessInfoID = taskProcessInfoID).get
+  }
+
+  def getTaskProcessInfoList(taskID: String): Try[List[TaskWebProcessInfo]] = Try {
+    val taskProcessInfoIDList: List[String] =  TaskProcessMapTable.getTaskProcessInfoID(taskID).get
+    var taskWebProcessInfoList: List[TaskWebProcessInfo] = List.empty[TaskWebProcessInfo]
+    for(taskProcessInfoID <- taskProcessInfoIDList) {
+      val taskProcessInfo: TaskProcessInfoRow = ServiceUtils.exec(taskProcessInfoTable.filter(_.taskProcessInfoID===taskProcessInfoID).result.head)
+      taskWebProcessInfoList = taskWebProcessInfoList :+ TaskWebProcessInfo(
+        taskProcessInfoID = taskProcessInfoID,
+        editUserID = taskProcessInfo.editUserID,
+        content = taskProcessInfo.content,
+        editDate =  convertDateTimeToWebString(taskProcessInfo.editDate)
+      )
+    }
+    taskWebProcessInfoList
   }
 
   def IDExists(taskProcessInfoID: String): Try[Boolean] = Try {

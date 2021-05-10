@@ -146,5 +146,10 @@ object ProjectInfoTable {
     sessionIDList.filter(sessionID => ChatSessionInfoTable.whetherIncludeUser(sessionID, userID).get)
   }
 
+  def getProjectTaskIDList(projectID: String): Try[List[String]] = Try {
+    ServiceUtils.exec(projectInfoTable.filter(_.projectID === projectID).map(_.taskIDList).result.head)
+  }
+
+
 }
 

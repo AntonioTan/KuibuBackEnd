@@ -34,7 +34,7 @@ object UserSystemBehavior {
 
   case class UserAddedMessage(userID: String, sender: ActorRef[StatusReply[UserFlowResponseMessage]]) extends UserSystemCommand
 
-  case class UserSystemInitializeMessage(userID: String, projectID: String, sender: ActorRef[StatusReply[UserInitializeResponseMessage]]) extends UserSystemCommand
+  case class UserSystemInitializeMessage(userID: String, lastProjectID: String, projectID: String, sender: ActorRef[StatusReply[UserInitializeResponseMessage]]) extends UserSystemCommand
 
   case class UserFlowResponseMessage(userFlow: Flow[Message, Message, Any]) extends UserSystemCommand
 
@@ -172,8 +172,8 @@ class UserSystemBehavior(context: ActorContext[UserSystemCommand]) extends Abstr
           sender ! StatusReply.success(UserFlowResponseMessage(userFlow))
         }
         Behaviors.same
-      case UserSystemInitializeMessage(projectID, userID, sender: ActorRef[StatusReply[UserInitializeResponseMessage]]) =>
-        userMap(userID) ! UserWsInitializeMessage(projectID, userID, sender)
+      case UserSystemInitializeMessage(lastProjectID, projectID, userID, sender: ActorRef[StatusReply[UserInitializeResponseMessage]]) =>
+        userMap(userID) ! UserWsInitializeMessage(lastProjectID, projectID, userID, sender)
         println("user system get initialize message!")
         sender ! StatusReply.success(UserInitializeResponseMessage(true))
         Behaviors.same

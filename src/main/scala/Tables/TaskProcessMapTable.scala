@@ -27,4 +27,10 @@ object TaskProcessMapTable {
       taskID = taskID, taskProcessInfoID = taskProcessInfoID
     ))
   }
+
+  def getTaskProcessInfoID(taskID: String): Try[List[String]] = Try {
+    ServiceUtils.exec(taskProcessMapTable.filter(_.taskID === taskID).map(_.taskProcessInfoID).result).toList
+  }
+
+
 }

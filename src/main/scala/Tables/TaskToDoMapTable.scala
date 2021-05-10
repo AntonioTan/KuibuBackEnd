@@ -29,4 +29,8 @@ object TaskToDoMapTable {
     ))
   }
 
+  def getTaskToDoIDList(taskID: String): Try[List[String]] = Try {
+    ServiceUtils.exec(taskToDoMapTable.filter(_.taskID === taskID).map(_.taskToDoID).result).toList
+  }
+
 }
