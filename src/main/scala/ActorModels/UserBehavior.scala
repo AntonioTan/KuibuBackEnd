@@ -4,7 +4,7 @@ import ActorModels.UserBehavior._
 import ActorModels.UserSystemBehavior.{UserInitializeResponseMessage, UserSystemCommand, userMap}
 import Plugins.CommonUtils.CommonTypes.JacksonSerializable
 import Plugins.CommonUtils.IOUtils
-import Tables.{ChatMessage, ChatMessageTable, ChatSessionInfoTable, ChatWsMessage, ProjectInfoTable, TaskInfoTable, UserUnreadMessageTable}
+import Tables.{ChatMessage, ChatMessageTable, ChatSessionInfoTable, ChatWsMessage, ProjectCompleteInfo, ProjectInfoTable, TaskInfoTable, UserUnreadMessageTable}
 import akka.actor.TypedActor.self
 import akka.actor.typed.pubsub.Topic
 import akka.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors}
@@ -31,7 +31,9 @@ object UserBehavior {
       new JsonSubTypes.Type(value = classOf[UserWsInitializeMessage], name = "UserWsInitializeMessage"),
       new JsonSubTypes.Type(value = classOf[UserWsChatMessage], name = "UserWsChatMessage"),
       new JsonSubTypes.Type(value = classOf[UserWsPushChatMessage], name = "UserWsPushChatMessage"),
-  ))
+      new JsonSubTypes.Type(value = classOf[UserWsSyncEditMessage], name = "UserWsSyncEditMessage"),
+
+    ))
   trait UserCommand
 
   case class UserChatMessage(content: String) extends UserCommand with JacksonSerializable
@@ -67,6 +69,8 @@ object UserBehavior {
 
   case class UserWsPushChatMessage(chatMessage: ChatWsMessage) extends UserCommand with JacksonSerializable
 
+  case class UserWsSyncEditMessage(taskID: String, editUserID: String, content: String) extends UserCommand with JacksonSerializable
+
   case class Structure(a: List[String])
 
   case class UserTestMessage(ab: Structure, ac: DateTime) extends UserCommand with JacksonSerializable
@@ -94,12 +98,12 @@ object UserBehavior {
 
 class UserBehavior(context: ActorContext[UserCommand]) extends AbstractBehavior[UserCommand](context) {
 
-  override def onSignal: PartialFunction[Signal, Behavior[UserCommand]] = {
-    case ChildFailed(ref, cause) =>
-      println("terminated", ref.path.name)
-      topicMap.remove(ref.path.name)
-      Behaviors.same
-  }
+  //  override def onSignal: PartialFunction[Signal, Behavior[UserCommand]] = {
+  //    case ChildFailed(ref, cause) =>
+  //      println("terminated", ref.path.name)
+  //      topicMap.remove(ref.path.name)
+  //      Behaviors.same
+  //  }
 
   override def onMessage(msg: UserCommand): Behavior[UserCommand] = {
     msg match {
@@ -128,18 +132,25 @@ class UserBehavior(context: ActorContext[UserCommand]) extends AbstractBehavior[
         ChatMessageTable.addChatFromWs(chatMessage)
         topicMap(s"${sessionTopicHead}-${chatMessage.sessionID}") ! Topic.Publish(UserWsPushChatMessage(chatMessage))
         this
+      case UserWsSyncEditMessage(taskID: String, editUserID: String, content: String) =>
+        context.log.info(IOUtils.serialize(msg).get)
+        topicMap(s"${taskTopicHead}-${taskID}") ! Topic.Publish(msg)
+        this
       case UserWsPushChatMessage(chatMessage: ChatWsMessage) =>
         println("publish new message", chatMessage)
         this
       case UserWsInitializeMessage(lastProjectID, projectID, userID, sender) =>
+        println("initialize", msg)
         // Unsubscribe to the old project
-        val oldSessionIDList: List[String] = ProjectInfoTable.getUserIncludedSessionIDList(lastProjectID, userID).get
-        val oldTaskIDList: List[String] = TaskInfoTable.getMyTaskIDList(projectID = projectID, userID = userID).get
-        for(oldSessionID <- oldSessionIDList) {
-          if(replyToMap.contains(userID)) topicMap(s"${sessionTopicHead}-${oldSessionID}") ! Topic.unsubscribe(replyToMap(userID))
-        }
-        for(oldTaskID <- oldTaskIDList) {
-          if(replyToMap.contains(userID)) topicMap(s"${taskTopicHead}-${oldTaskID}") ! Topic.unsubscribe(replyToMap(userID))
+        if (ProjectInfoTable.IDExists(lastProjectID).get) {
+          val oldSessionIDList: List[String] = ProjectInfoTable.getUserIncludedSessionIDList(lastProjectID, userID).get
+          val oldTaskIDList: List[String] = TaskInfoTable.getMyTaskIDList(projectID = lastProjectID, userID = userID).get
+          for (oldSessionID <- oldSessionIDList) {
+            if (replyToMap.contains(userID)) topicMap(s"${sessionTopicHead}-${oldSessionID}") ! Topic.unsubscribe(replyToMap(userID))
+          }
+          for (oldTaskID <- oldTaskIDList) {
+            if (replyToMap.contains(userID)) topicMap(s"${taskTopicHead}-${oldTaskID}") ! Topic.unsubscribe(replyToMap(userID))
+          }
         }
 
         // Subscribe to new Project
@@ -147,16 +158,22 @@ class UserBehavior(context: ActorContext[UserCommand]) extends AbstractBehavior[
         val newTaskIDList: List[String] = TaskInfoTable.getMyTaskIDList(projectID, userID).get
         for (newSessionID <- newSessionIDList) {
           val sessionTopicID: String = s"${sessionTopicHead}-${newSessionID}"
-          val newSessionTopic: ActorRef[Topic.Command[UserCommand]] = context.spawnAnonymous(Topic[UserCommand](sessionTopicID))
-          topicMap.update(sessionTopicID, newSessionTopic)
-          if (replyToMap.contains(userID)) newSessionTopic ! Topic.subscribe(replyToMap(userID))
+          if (!topicMap.contains(newSessionID)) {
+            val newSessionTopic: ActorRef[Topic.Command[UserCommand]] = context.spawnAnonymous(Topic[UserCommand](sessionTopicID))
+            topicMap.update(sessionTopicID, newSessionTopic)
+            if (replyToMap.contains(userID)) newSessionTopic ! Topic.subscribe(replyToMap(userID))
+          }
         }
-        for(newTaskID <- newTaskIDList) {
+        for (newTaskID <- newTaskIDList) {
           val taskTopicID: String = s"${taskTopicHead}-${newTaskID}"
-          val newTaskTopic: ActorRef[Topic.Command[UserCommand]] = context.spawnAnonymous(Topic[UserCommand](taskTopicID))
-          topicMap.update(taskTopicID, newTaskTopic)
-          if(replyToMap.contains(userID)) newTaskTopic ! Topic.subscribe(replyToMap(userID))
+          if (!topicMap.contains(taskTopicID)) {
+            val newTaskTopic: ActorRef[Topic.Command[UserCommand]] = context.spawnAnonymous(Topic[UserCommand](taskTopicID))
+            topicMap.update(taskTopicID, newTaskTopic)
+            if (replyToMap.contains(userID)) newTaskTopic ! Topic.subscribe(replyToMap(userID))
+
+          }
         }
+        sender ! StatusReply.success(UserInitializeResponseMessage(true))
         this
       case UserWsConvertMessage(msg, replyTo) =>
         msg match {
@@ -177,7 +194,7 @@ class UserBehavior(context: ActorContext[UserCommand]) extends AbstractBehavior[
           case UserWsChatMessage(chatMessage: ChatWsMessage) =>
             println("chatMessage", chatMessage)
             ChatMessageTable.addChatFromWs(chatMessage)
-//            println(replyToMap)
+            //            println(replyToMap)
             topicMap(s"${sessionTopicHead}-${chatMessage.sessionID}") ! Topic.Publish(message = UserWsPushChatMessage(chatMessage))
             replyToMap("tttttt") ! UserWsPushChatMessage(chatMessage)
             replyTo ! TextMessage.Strict(IOUtils.serialize(UserWsInfoMessage("New Chat Message Saved")).get)

@@ -22,7 +22,7 @@ case class TaskStatusInfo(taskName: String, status: Boolean)
 case class TaskNewFromWeb(taskName: String, projectID: String, parentID: String, startDate: String, endDate: String, description: String, leaderIDList: List[String], userIDList: List[String])
 case class TaskAddResult(outcome: Boolean, reason: String, taskID: String="", taskName: String="")
 case class MyTask(taskID: String, taskName: String, description: String, startDate: String, endDate: String, leader: String, members: String)
-case class SyncTask(taskID: String, taskName: String, leaderName: String, leaderIDList: List[String], startDate: String, endDate: String, description: String, toDoList: List[TaskWebToDoInfo], processInfoList: List[TaskWebProcessInfo], allMemberMap: Map[String, String])
+case class SyncTask(taskID: String, taskName: String, leaderName: String, leaderIDList: List[String], startDate: String, endDate: String, description: String, toDoList: List[TaskWebToDoInfo], processInfoMap: Map[String, TaskWebProcessInfo], allMemberMap: Map[String, String])
 
 class TaskInfoTable(tag: Tag) extends Table[TaskInfoRow](tag, GlobalDBs.kuibu_schema, _tableName = "task_info") {
   def taskID: Rep[String] = column[String]("task_id", O.PrimaryKey)
@@ -212,7 +212,7 @@ object TaskInfoTable {
   def getSyncTaskInfo(taskID: String): Try[SyncTask] = Try {
     val taskInfo: TaskInfoRow = ServiceUtils.exec(taskInfoTable.filter(_.taskID === taskID).result.head)
     val taskToDoInfoList: List[TaskWebToDoInfo] = TaskToDoInfoTable.getTaskToDoInfoList(taskID).get
-    val taskProcessInfoList: List[TaskWebProcessInfo] = TaskProcessInfoTable.getTaskProcessInfoList(taskID).get
+    val taskProcessInfoMap: Map[String, TaskWebProcessInfo] = TaskProcessInfoTable.getTaskProcessInfoMap(taskID).get
     val allMemberIDList: List[String] = taskInfo.leaderIDList ++ taskInfo.userIDList
     SyncTask(
       taskID=taskInfo.taskID,
@@ -223,7 +223,7 @@ object TaskInfoTable {
       endDate = convertDateTimeToWebString(taskInfo.endDate),
       description = taskInfo.description,
       toDoList = taskToDoInfoList,
-      processInfoList = taskProcessInfoList,
+      processInfoMap = taskProcessInfoMap,
       allMemberMap = UserAccountTable.getUserNamesByIDs(allMemberIDList).get
     )
 

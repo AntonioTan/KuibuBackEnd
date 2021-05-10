@@ -61,19 +61,20 @@ object TaskProcessInfoTable {
     TaskProcessMapTable.addTaskProcessMap(taskID = taskID, taskProcessInfoID = taskProcessInfoID).get
   }
 
-  def getTaskProcessInfoList(taskID: String): Try[List[TaskWebProcessInfo]] = Try {
+  def getTaskProcessInfoMap(taskID: String): Try[Map[String, TaskWebProcessInfo]] = Try {
     val taskProcessInfoIDList: List[String] =  TaskProcessMapTable.getTaskProcessInfoID(taskID).get
-    var taskWebProcessInfoList: List[TaskWebProcessInfo] = List.empty[TaskWebProcessInfo]
+    var taskWebProcessInfoMap: Map[String,TaskWebProcessInfo] = Map.empty[String, TaskWebProcessInfo]
     for(taskProcessInfoID <- taskProcessInfoIDList) {
       val taskProcessInfo: TaskProcessInfoRow = ServiceUtils.exec(taskProcessInfoTable.filter(_.taskProcessInfoID===taskProcessInfoID).result.head)
-      taskWebProcessInfoList = taskWebProcessInfoList :+ TaskWebProcessInfo(
+      taskWebProcessInfoMap = taskWebProcessInfoMap.updated(taskProcessInfo.editUserID, TaskWebProcessInfo(
         taskProcessInfoID = taskProcessInfoID,
         editUserID = taskProcessInfo.editUserID,
         content = taskProcessInfo.content,
         editDate =  convertDateTimeToWebString(taskProcessInfo.editDate)
       )
+      )
     }
-    taskWebProcessInfoList
+    taskWebProcessInfoMap
   }
 
   def IDExists(taskProcessInfoID: String): Try[Boolean] = Try {

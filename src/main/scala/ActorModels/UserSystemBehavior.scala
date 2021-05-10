@@ -175,7 +175,6 @@ class UserSystemBehavior(context: ActorContext[UserSystemCommand]) extends Abstr
       case UserSystemInitializeMessage(lastProjectID, projectID, userID, sender: ActorRef[StatusReply[UserInitializeResponseMessage]]) =>
         userMap(userID) ! UserWsInitializeMessage(lastProjectID, projectID, userID, sender)
         println("user system get initialize message!")
-        sender ! StatusReply.success(UserInitializeResponseMessage(true))
         Behaviors.same
     }
 
