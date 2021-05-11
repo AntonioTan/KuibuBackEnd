@@ -4,7 +4,7 @@ import ActorModels.UserBehavior._
 import ActorModels.UserSystemBehavior.{UserInitializeResponseMessage, UserSystemCommand, userMap}
 import Plugins.CommonUtils.CommonTypes.JacksonSerializable
 import Plugins.CommonUtils.IOUtils
-import Tables.{ChatMessage, ChatMessageTable, ChatSessionInfoTable, ChatWsMessage, ProjectCompleteInfo, ProjectInfoTable, TaskInfoTable, UserUnreadMessageTable}
+import Tables.{ChatMessage, ChatMessageTable, ChatSessionInfoTable, ChatWsMessage, ProjectCompleteInfo, ProjectInfoTable, TaskInfoTable, TaskWebProcessInfo, TaskWebToDoInfo, UserUnreadMessageTable}
 import akka.actor.TypedActor.self
 import akka.actor.typed.pubsub.Topic
 import akka.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors}
@@ -32,6 +32,10 @@ object UserBehavior {
       new JsonSubTypes.Type(value = classOf[UserWsChatMessage], name = "UserWsChatMessage"),
       new JsonSubTypes.Type(value = classOf[UserWsPushChatMessage], name = "UserWsPushChatMessage"),
       new JsonSubTypes.Type(value = classOf[UserWsSyncEditMessage], name = "UserWsSyncEditMessage"),
+      new JsonSubTypes.Type(value = classOf[UserWsUpdateToDoJudgeMessage], name = "UserWsUpdateToDoJudgeMessage"),
+      new JsonSubTypes.Type(value = classOf[UserWsToDoStatusChangeMessage], name = "UserWsToDoStatusChangeMessage"),
+      new JsonSubTypes.Type(value = classOf[UserWsTaskProcessInfoUpdateMessage], name = "UserWsTaskProcessInfoUpdateMessage"),
+      new JsonSubTypes.Type(value = classOf[UserWsAddToDoMessage], name = "UserWsAddToDoMessage"),
 
     ))
   trait UserCommand
@@ -70,6 +74,14 @@ object UserBehavior {
   case class UserWsPushChatMessage(chatMessage: ChatWsMessage) extends UserCommand with JacksonSerializable
 
   case class UserWsSyncEditMessage(taskID: String, editUserID: String, content: String) extends UserCommand with JacksonSerializable
+
+  case class UserWsUpdateToDoJudgeMessage(taskID: String, taskToDoID: String, outcome: Boolean) extends UserCommand with JacksonSerializable
+
+  case class UserWsToDoStatusChangeMessage(taskID: String, taskToDoID: String, finishUserID: String, status: String, endDate: String) extends UserCommand with JacksonSerializable
+
+  case class UserWsTaskProcessInfoUpdateMessage(taskID: String, newTaskProcessInfo: TaskWebProcessInfo) extends UserCommand with JacksonSerializable
+
+  case class UserWsAddToDoMessage(taskID: String, newToDo: TaskWebToDoInfo) extends UserCommand with JacksonSerializable
 
   case class Structure(a: List[String])
 
@@ -138,6 +150,18 @@ class UserBehavior(context: ActorContext[UserCommand]) extends AbstractBehavior[
         this
       case UserWsPushChatMessage(chatMessage: ChatWsMessage) =>
         println("publish new message", chatMessage)
+        this
+      case UserWsUpdateToDoJudgeMessage(taskID: String, taskToDoID: String, outcome: Boolean) =>
+        topicMap(s"${taskTopicHead}-${taskID}") ! Topic.Publish(msg)
+        this
+      case UserWsToDoStatusChangeMessage(taskID: String, taskToDoID: String, endDate: String, finishUserID: String, status: String) =>
+        topicMap(s"${taskTopicHead}-${taskID}") ! Topic.Publish(msg)
+        this
+      case UserWsTaskProcessInfoUpdateMessage(taskID: String, newTaskProcessInfo: TaskWebProcessInfo) =>
+        topicMap(s"${taskTopicHead}-${taskID}") ! Topic.Publish(msg)
+        this
+      case UserWsAddToDoMessage(taskID: String, newToDo: TaskWebToDoInfo) =>
+        topicMap(s"${taskTopicHead}-${taskID}") ! Topic.Publish(msg)
         this
       case UserWsInitializeMessage(lastProjectID, projectID, userID, sender) =>
         println("initialize", msg)

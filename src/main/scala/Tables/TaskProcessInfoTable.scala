@@ -50,7 +50,7 @@ object TaskProcessInfoTable {
     TaskProcessMapTable.addTaskProcessMap(taskID = taskID, taskProcessInfoID = taskProcessInfoID).get
   }
 
-  def addTaskProcessInfo(taskID: String, editUserID: String, content: String, editDate: DateTime=DateTime.now()): Try[Int] = Try {
+  def addTaskProcessInfo(taskID: String, editUserID: String, content: String, editDate: DateTime=DateTime.now()): Try[String] = Try {
     val taskProcessInfoID: String = generateNewID()
     ServiceUtils.exec(taskProcessInfoTable += TaskProcessInfoRow(
       taskProcessInfoID = taskProcessInfoID,
@@ -59,10 +59,11 @@ object TaskProcessInfoTable {
       editDate = editDate
     ))
     TaskProcessMapTable.addTaskProcessMap(taskID = taskID, taskProcessInfoID = taskProcessInfoID).get
+    taskProcessInfoID
   }
 
   def getTaskProcessInfoMap(taskID: String): Try[Map[String, TaskWebProcessInfo]] = Try {
-    val taskProcessInfoIDList: List[String] =  TaskProcessMapTable.getTaskProcessInfoID(taskID).get
+    val taskProcessInfoIDList: List[String] =  TaskProcessMapTable.getTaskProcessInfoIDList(taskID).get
     var taskWebProcessInfoMap: Map[String,TaskWebProcessInfo] = Map.empty[String, TaskWebProcessInfo]
     for(taskProcessInfoID <- taskProcessInfoIDList) {
       val taskProcessInfo: TaskProcessInfoRow = ServiceUtils.exec(taskProcessInfoTable.filter(_.taskProcessInfoID===taskProcessInfoID).result.head)
@@ -76,6 +77,36 @@ object TaskProcessInfoTable {
     }
     taskWebProcessInfoMap
   }
+
+  def updateProcessInfo(taskID: String, editUserID: String, content: String): Try[TaskWebProcessInfo] = Try {
+    val taskProcessInfoIDList = TaskProcessMapTable.getTaskProcessInfoIDList(taskID).get
+    val editDate: String = convertDateTimeToWebString(DateTime.now())
+    for(taskProcessInfoID <- taskProcessInfoIDList) {
+      if(ServiceUtils.exec(taskProcessInfoTable.filter(taskProcessInfo =>
+        taskProcessInfo.taskProcessInfoID === taskProcessInfoID && taskProcessInfo.editUserID===editUserID ).exists.result)) {
+        ServiceUtils.exec(taskProcessInfoTable.filter(taskProcessInfo =>
+          taskProcessInfo.taskProcessInfoID === taskProcessInfoID && taskProcessInfo.editUserID===editUserID ).map(_.editDate).update(DateTime.now()))
+        ServiceUtils.exec(taskProcessInfoTable.filter(taskProcessInfo =>
+          taskProcessInfo.taskProcessInfoID === taskProcessInfoID && taskProcessInfo.editUserID===editUserID ).map(_.content).update(content))
+        val newTaskProcessInfo =  ServiceUtils.exec(taskProcessInfoTable.filter(taskProcessInfo =>
+          taskProcessInfo.taskProcessInfoID === taskProcessInfoID && taskProcessInfo.editUserID===editUserID ).result.head)
+        return convertToWeb(newTaskProcessInfo)
+      }
+    }
+    val newProcessInfoID = TaskProcessInfoTable.addTaskProcessInfo(taskID, editUserID, content).get
+    val newProcessInfo = ServiceUtils.exec(taskProcessInfoTable.filter(_.taskProcessInfoID===newProcessInfoID).result.head)
+    convertToWeb(newProcessInfo).get
+  }
+
+  def convertToWeb(taskProcessInfo:TaskProcessInfoRow): Try[TaskWebProcessInfo] = Try{
+    TaskWebProcessInfo(
+      taskProcessInfoID = taskProcessInfo.taskProcessInfoID,
+      editUserID = taskProcessInfo.editUserID,
+      content = taskProcessInfo.content,
+      editDate =  convertDateTimeToWebString(taskProcessInfo.editDate)
+    )
+  }
+
 
   def IDExists(taskProcessInfoID: String): Try[Boolean] = Try {
     ServiceUtils.exec(taskProcessInfoTable.filter(_.taskProcessInfoID=== taskProcessInfoID).exists.result)

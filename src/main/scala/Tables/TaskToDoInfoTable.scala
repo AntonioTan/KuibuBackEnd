@@ -58,7 +58,7 @@ object TaskToDoInfoTable {
     TaskToDoMapTable.addTaskToDoMap(taskID, taskToDoID).get
   }
 
-  def addTaskToDo(taskID: String, finishUserID: Option[String]=null, createUserID: String, content: String, startDate: DateTime=DateTime.now()): Try[Int] = Try {
+  def addTaskToDo(taskID: String, finishUserID: Option[String]=null, createUserID: String, content: String, startDate: DateTime=DateTime.now()): Try[String] = Try {
     val taskToDoID = generateNewID()
     ServiceUtils.exec(taskToDoInfoTable += TaskToDoInfoRow(
       taskToDoID = taskToDoID,
@@ -69,6 +69,7 @@ object TaskToDoInfoTable {
       startDate = startDate,
     ))
     TaskToDoMapTable.addTaskToDoMap(taskID, taskToDoID).get
+    taskToDoID
   }
 
   def getTaskToDoInfoList(taskID: String): Try[List[TaskWebToDoInfo]] = Try {
@@ -89,6 +90,40 @@ object TaskToDoInfoTable {
       )
     }
     taskToDoInfoList
+  }
+
+  def updateTaskToDoJudgeStatus(taskToDoID: String, outcome: Boolean): Try[Int] = Try {
+    if(!outcome) {
+      ServiceUtils.exec(taskToDoInfoTable.filter(_.taskToDoID === taskToDoID).map(_.finishUserID).update(null))
+      ServiceUtils.exec(taskToDoInfoTable.filter(_.taskToDoID === taskToDoID).map(_.endDate).update(null))
+    }
+    ServiceUtils.exec(taskToDoInfoTable.filter(_.taskToDoID === taskToDoID).map(_.status).update(if(outcome)"2" else "1"))
+  }
+
+  def updateTaskToDoStatus(taskToDoID: String, status: String, finishUserID: String): Try[String] = Try {
+    val endDate = DateTime.now()
+    ServiceUtils.exec(taskToDoInfoTable.filter(_.taskToDoID === taskToDoID).map(_.finishUserID).update(Option(finishUserID)))
+    ServiceUtils.exec(taskToDoInfoTable.filter(_.taskToDoID === taskToDoID).map(_.endDate).update(Option(endDate)))
+    ServiceUtils.exec(taskToDoInfoTable.filter(_.taskToDoID === taskToDoID).map(_.status).update(status))
+    convertDateTimeToWebString(endDate)
+  }
+
+  def addTaskToDoFromWeb(taskID: String, newToDo: TaskWebToDoInfo): Try[TaskWebToDoInfo] = Try {
+    val newTaskToDoID = TaskToDoInfoTable.addTaskToDo(taskID = taskID, finishUserID = null, createUserID = newToDo.createUserID, content = newToDo.content).get
+    convertToWeb(ServiceUtils.exec(taskToDoInfoTable.filter(_.taskToDoID === newTaskToDoID).result.head)).get
+  }
+
+  def convertToWeb(taskToDoInfo: TaskToDoInfoRow): Try[TaskWebToDoInfo] = Try {
+    val endDate: String = if(taskToDoInfo.endDate.getOrElse("") != "") convertDateTimeToWebString(taskToDoInfo.endDate.get) else ""
+    TaskWebToDoInfo(
+      taskToDoID = taskToDoInfo.taskToDoID,
+      status = taskToDoInfo.status,
+      createUserID = taskToDoInfo.createUserID,
+      finishUserID = taskToDoInfo.finishUserID.getOrElse(""),
+      content = taskToDoInfo.content,
+      startDate = convertDateTimeToWebString(taskToDoInfo.startDate),
+      endDate = endDate
+    )
   }
 
   def IDExists(taskToDoID: String): Try[Boolean] = Try {
