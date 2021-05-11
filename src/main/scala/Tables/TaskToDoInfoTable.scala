@@ -113,6 +113,21 @@ object TaskToDoInfoTable {
     convertToWeb(ServiceUtils.exec(taskToDoInfoTable.filter(_.taskToDoID === newTaskToDoID).result.head)).get
   }
 
+  def getTaskProgress(taskID: String): Try[Int] = Try {
+    val taskToDoIDList: List[String] = TaskToDoMapTable.getTaskToDoIDList(taskID).get
+    var taskToDoList: List[TaskToDoInfoRow] = List.empty[TaskToDoInfoRow]
+    for(taskToDoID <- taskToDoIDList) {
+        taskToDoList = taskToDoList :+ ServiceUtils.exec(taskToDoInfoTable.filter(_.taskToDoID===taskToDoID).result.head)
+    }
+    if(taskToDoList.isEmpty) {
+      0
+    } else {
+      val finishedTaskToDoList: List[TaskToDoInfoRow] = taskToDoList.filter(_.status=="2")
+      Math.floor(finishedTaskToDoList.length*100/taskToDoIDList.length).toInt
+    }
+  }
+
+
   def convertToWeb(taskToDoInfo: TaskToDoInfoRow): Try[TaskWebToDoInfo] = Try {
     val endDate: String = if(taskToDoInfo.endDate.getOrElse("") != "") convertDateTimeToWebString(taskToDoInfo.endDate.get) else ""
     TaskWebToDoInfo(

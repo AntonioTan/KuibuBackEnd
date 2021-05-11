@@ -23,6 +23,7 @@ case class TaskNewFromWeb(taskName: String, projectID: String, parentID: String,
 case class TaskAddResult(outcome: Boolean, reason: String, taskID: String="", taskName: String="")
 case class MyTask(taskID: String, taskName: String, description: String, startDate: String, endDate: String, leader: String, members: String)
 case class SyncTask(taskID: String, taskName: String, leaderName: String, leaderIDList: List[String], startDate: String, endDate: String, description: String, toDoList: List[TaskWebToDoInfo], processInfoMap: Map[String, TaskWebProcessInfo], allMemberMap: Map[String, String])
+case class GanttTask(taskID: String, taskName: String, startDate: String, endDate: String, progress: Int, parentID: String)
 
 class TaskInfoTable(tag: Tag) extends Table[TaskInfoRow](tag, GlobalDBs.kuibu_schema, _tableName = "task_info") {
   def taskID: Rep[String] = column[String]("task_id", O.PrimaryKey)
@@ -226,7 +227,30 @@ object TaskInfoTable {
       processInfoMap = taskProcessInfoMap,
       allMemberMap = UserAccountTable.getUserNamesByIDs(allMemberIDList).get
     )
+  }
 
+  def getGanttTaskList(taskIDList: List[String]): Try[List[GanttTask]] = Try{
+    var ganttTaskList: List[GanttTask] = List.empty[GanttTask]
+    for(taskID <- taskIDList) {
+      val taskInfo: TaskInfoRow = ServiceUtils.exec(taskInfoTable.filter(_.taskID===taskID).result.head)
+      val progress: Int = TaskToDoInfoTable.getTaskProgress(taskID).get
+      ganttTaskList = ganttTaskList :+ GanttTask(
+        taskID = taskInfo.taskID,
+        taskName = taskInfo.taskName,
+        startDate = convertDateTimeToWebString(taskInfo.startDate),
+        endDate = convertDateTimeToWebString(taskInfo.endDate),
+        progress = progress,
+        parentID = taskInfo.parentID
+      )
+    }
+    ganttTaskList
+  }
+
+  def updateGanttDateFromWeb(taskList: List[GanttTask]): Try[Unit] = Try {
+    for(ganttTask <- taskList) {
+      ServiceUtils.exec(taskInfoTable.filter(_.taskID === ganttTask.taskID).map(_.startDate).update(new DateTime(ganttTask.startDate)))
+      ServiceUtils.exec(taskInfoTable.filter(_.taskID === ganttTask.taskID).map(_.endDate).update(new DateTime(ganttTask.endDate)))
+    }
   }
 
 

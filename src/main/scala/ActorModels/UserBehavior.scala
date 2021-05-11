@@ -4,7 +4,7 @@ import ActorModels.UserBehavior._
 import ActorModels.UserSystemBehavior.{UserInitializeResponseMessage, UserSystemCommand, userMap}
 import Plugins.CommonUtils.CommonTypes.JacksonSerializable
 import Plugins.CommonUtils.IOUtils
-import Tables.{ChatMessage, ChatMessageTable, ChatSessionInfoTable, ChatWsMessage, ProjectCompleteInfo, ProjectInfoTable, TaskInfoTable, TaskWebProcessInfo, TaskWebToDoInfo, UserUnreadMessageTable}
+import Tables.{ChatMessage, ChatMessageTable, ChatSessionInfoTable, ChatWsMessage, GanttTask, ProjectCompleteInfo, ProjectInfoTable, TaskInfoTable, TaskWebProcessInfo, TaskWebToDoInfo, UserUnreadMessageTable}
 import akka.actor.TypedActor.self
 import akka.actor.typed.pubsub.Topic
 import akka.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors}
@@ -36,6 +36,8 @@ object UserBehavior {
       new JsonSubTypes.Type(value = classOf[UserWsToDoStatusChangeMessage], name = "UserWsToDoStatusChangeMessage"),
       new JsonSubTypes.Type(value = classOf[UserWsTaskProcessInfoUpdateMessage], name = "UserWsTaskProcessInfoUpdateMessage"),
       new JsonSubTypes.Type(value = classOf[UserWsAddToDoMessage], name = "UserWsAddToDoMessage"),
+      new JsonSubTypes.Type(value = classOf[UserWsGanttTaskDateChangeMessage], name = "UserWsGanttTaskDateChangeMessage"),
+      new JsonSubTypes.Type(value = classOf[UserWsGanttUpdateMessage], name = "UserWsGanttUpdateMessage"),
 
     ))
   trait UserCommand
@@ -83,6 +85,11 @@ object UserBehavior {
 
   case class UserWsAddToDoMessage(taskID: String, newToDo: TaskWebToDoInfo) extends UserCommand with JacksonSerializable
 
+  case class UserWsGanttTaskDateChangeMessage(projectID: String, editUserID: String, taskID: String, startDate: String, endDate: String) extends UserCommand with JacksonSerializable
+
+  case class UserWsGanttUpdateMessage(projectID: String, editUserID: String) extends UserCommand with JacksonSerializable
+
+
   case class Structure(a: List[String])
 
   case class UserTestMessage(ab: Structure, ac: DateTime) extends UserCommand with JacksonSerializable
@@ -95,6 +102,7 @@ object UserBehavior {
 
   val sessionTopicHead = "sessionID"
   val taskTopicHead = "taskID"
+  val projectTopicHead = "projectID"
   var replyToMap: TrieMap[String, ActorRef[UserCommand]] = TrieMap.empty[String, ActorRef[UserCommand]]
   var topicMap: TrieMap[String, ActorRef[Topic.Command[UserCommand]]] = TrieMap.empty[String, ActorRef[Topic.Command[UserCommand]]]
 
@@ -163,10 +171,19 @@ class UserBehavior(context: ActorContext[UserCommand]) extends AbstractBehavior[
       case UserWsAddToDoMessage(taskID: String, newToDo: TaskWebToDoInfo) =>
         topicMap(s"${taskTopicHead}-${taskID}") ! Topic.Publish(msg)
         this
+      case UserWsGanttTaskDateChangeMessage(projectID: String, taskID: String, editUserID: String, startDate: String, endDate: String) =>
+        topicMap(s"${projectTopicHead}-${projectID}") ! Topic.Publish(msg)
+        this
+      case UserWsGanttUpdateMessage(projectID: String, editUserID: String) =>
+        topicMap(s"${projectTopicHead}-${projectID}") ! Topic.Publish(msg)
+        this
       case UserWsInitializeMessage(lastProjectID, projectID, userID, sender) =>
         println("initialize", msg)
         // Unsubscribe to the old project
         if (ProjectInfoTable.IDExists(lastProjectID).get) {
+          val lastProjectTopicID: String = s"${projectTopicHead}-${projectID}"
+          if(replyToMap.contains(userID)) topicMap(lastProjectTopicID) ! Topic.unsubscribe(replyToMap(userID))
+
           val oldSessionIDList: List[String] = ProjectInfoTable.getUserIncludedSessionIDList(lastProjectID, userID).get
           val oldTaskIDList: List[String] = TaskInfoTable.getMyTaskIDList(projectID = lastProjectID, userID = userID).get
           for (oldSessionID <- oldSessionIDList) {
@@ -178,24 +195,24 @@ class UserBehavior(context: ActorContext[UserCommand]) extends AbstractBehavior[
         }
 
         // Subscribe to new Project
+        val currentProjectTopicID: String = s"${projectTopicHead}-${projectID}"
+        if(replyToMap.contains(userID)) {
+          topicMap.getOrElseUpdate(currentProjectTopicID, context.spawnAnonymous(Topic[UserCommand](currentProjectTopicID))) ! Topic.subscribe(replyToMap(userID))
+        }
         val newSessionIDList: List[String] = ProjectInfoTable.getUserIncludedSessionIDList(projectID, userID).get
         val newTaskIDList: List[String] = TaskInfoTable.getMyTaskIDList(projectID, userID).get
         for (newSessionID <- newSessionIDList) {
           val sessionTopicID: String = s"${sessionTopicHead}-${newSessionID}"
-          if (!topicMap.contains(newSessionID)) {
-            val newSessionTopic: ActorRef[Topic.Command[UserCommand]] = context.spawnAnonymous(Topic[UserCommand](sessionTopicID))
-            topicMap.update(sessionTopicID, newSessionTopic)
-            if (replyToMap.contains(userID)) newSessionTopic ! Topic.subscribe(replyToMap(userID))
-          }
+          if(replyToMap.contains(userID)) topicMap.getOrElseUpdate(sessionTopicID, context.spawnAnonymous(Topic[UserCommand](sessionTopicID))) ! Topic.subscribe(replyToMap(userID))
         }
         for (newTaskID <- newTaskIDList) {
           val taskTopicID: String = s"${taskTopicHead}-${newTaskID}"
-          if (!topicMap.contains(taskTopicID)) {
-            val newTaskTopic: ActorRef[Topic.Command[UserCommand]] = context.spawnAnonymous(Topic[UserCommand](taskTopicID))
-            topicMap.update(taskTopicID, newTaskTopic)
-            if (replyToMap.contains(userID)) newTaskTopic ! Topic.subscribe(replyToMap(userID))
-
-          }
+          if(replyToMap.contains(userID)) topicMap.getOrElseUpdate(taskTopicID, context.spawnAnonymous(Topic[UserCommand](taskTopicID))) ! Topic.subscribe(replyToMap(userID))
+//          if (!topicMap.contains(taskTopicID)) {
+//            val newTaskTopic: ActorRef[Topic.Command[UserCommand]] = context.spawnAnonymous(Topic[UserCommand](taskTopicID))
+//            topicMap.update(taskTopicID, newTaskTopic)
+//            if (replyToMap.contains(userID)) newTaskTopic ! Topic.subscribe(replyToMap(userID))
+//          }
         }
         sender ! StatusReply.success(UserInitializeResponseMessage(true))
         this

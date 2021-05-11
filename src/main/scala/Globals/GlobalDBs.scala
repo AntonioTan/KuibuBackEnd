@@ -28,11 +28,11 @@ object GlobalDBs {
     rst = UserAccountTable.addUserFriend("tttttt", "eeeeee")
     rst = UserAccountTable.addUserFriend("tttttt", "ffffff")
     ProjectInfoTable.addProjectWithID("000000", "美的集团项目分析", "tttttt", "进行美的集团的财务分析",
-      List("tttttt", "aaaaaa", "bbbbbb", "cccccc", "dddddd", "eeeeee", "ffffff"))
+      List("tttttt", "aaaaaa", "bbbbbb", "cccccc", "dddddd", "eeeeee", "ffffff"), startDate = DateTime.parse("2021/02/02", dateTimeFormatter))
     ProjectInfoTable.addProjectWithID("111111", "篮球比赛训练", "tttttt", "进行信息学院篮球比赛训练",
-      List("tttttt", "aaaaaa", "bbbbbb", "cccccc", "dddddd", "eeeeee", "ffffff"))
+      List("tttttt", "aaaaaa", "bbbbbb", "cccccc", "dddddd", "eeeeee", "ffffff"), startDate = DateTime.parse("2021/03/02", dateTimeFormatter))
     ProjectInfoTable.addProjectWithID("222222", "任务管理信息系统开发", "tttttt", "进行任务管理信息系统的开发",
-      List("tttttt","aaaaaa", "bbbbbb", "cccccc", "dddddd", "eeeeee", "ffffff"))
+      List("tttttt","aaaaaa", "bbbbbb", "cccccc", "dddddd", "eeeeee", "ffffff"), startDate = DateTime.parse("2021/05/02", dateTimeFormatter))
     TaskInfoTable.addTaskWithID(taskID = "000000", taskName = "周训练", projectID = "111111",
       startDate = DateTime.parse("2021/04/02", dateTimeFormatter), endDate = DateTime.parse("2021/07/09", dateTimeFormatter), description = "完成周训练", leaderIDList=List[String]("tttttt"), childrenIDList = List[String]("111111", "222222", "333333"), userIDList = List[String]("tttttt", "aaaaaa", "bbbbbb", "cccccc", "dddddd"))
     TaskInfoTable.addTaskWithID(taskID = "111111", taskName = "下蹲", projectID = "111111",

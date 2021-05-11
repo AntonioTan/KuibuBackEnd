@@ -2,11 +2,11 @@ package ActorModels
 
 import ActorModels.UserBehavior.UserChatMessage
 import ActorModels.UserSystemBehavior.{UserInitializeResponseMessage, UserSystemInitializeMessage}
-import ActorModels.UserWebRequestBehavior.{UserWebAddProjectMessage, UserWebAddTaskMessage, UserWebAddToDoMessage, UserWebBasicProjectInfoMessage, UserWebBasicUserInfoMessage, UserWebCommand, UserWebGetCompleteProjectInfoMessage, UserWebGetCompleteTaskInfoMessage, UserWebGetMemberMapMessage, UserWebGetMyTaskListMessage, UserWebGetSessionInfoMessage, UserWebGetSyncTaskInfoMessage, UserWebGetTasksInfoMessage, UserWebGetUserNameMessage, UserWebLoginCommand, UserWebLoginMessage, UserWebMessage, UserWebProcessInfoUpdateMessage, UserWebRegisterMessage, UserWebToDoJudgeMessage, UserWebToDoStatusChangeMessage, UserWebWSInitializeMessage, WebReplyAddProjectMessage, WebReplyAddTaskMessage, WebReplyAddToDoMessage, WebReplyBasicProjectInfoMessage, WebReplyBasicUserInfoMessage, WebReplyGetCompleteProjectInfoMessage, WebReplyGetCompleteTaskInfoMessage, WebReplyGetMyTaskListMessage, WebReplyGetSessionInfoMessage, WebReplyGetSyncTaskInfoMessage, WebReplyGetTasksInfoMessage, WebReplyGetUserNameMessage, WebReplyLoginMessage, WebReplyMemberMapMessage, WebReplyMessage, WebReplyRegisterMessage, WebReplyTaskProcessInfoUpdateMessage, WebReplyToDoJudgeMessage, WebReplyToDoStatusChangeMessage, WebReplyWSInitializeMessage}
+import ActorModels.UserWebRequestBehavior.{UserWebAddProjectMessage, UserWebAddTaskMessage, UserWebAddToDoMessage, UserWebBasicProjectInfoMessage, UserWebBasicUserInfoMessage, UserWebCommand, UserWebGanttDateChangeMessage, UserWebGetCompleteProjectInfoMessage, UserWebGetCompleteTaskInfoMessage, UserWebGetGanttDataMessage, UserWebGetMemberMapMessage, UserWebGetMyTaskListMessage, UserWebGetSessionInfoMessage, UserWebGetSyncTaskInfoMessage, UserWebGetTasksInfoMessage, UserWebGetUserNameMessage, UserWebLoginCommand, UserWebLoginMessage, UserWebMessage, UserWebProcessInfoUpdateMessage, UserWebRegisterMessage, UserWebToDoJudgeMessage, UserWebToDoStatusChangeMessage, UserWebWSInitializeMessage, WebReplyAddProjectMessage, WebReplyAddTaskMessage, WebReplyAddToDoMessage, WebReplyBasicProjectInfoMessage, WebReplyBasicUserInfoMessage, WebReplyGanttDateChangeMessage, WebReplyGetCompleteProjectInfoMessage, WebReplyGetCompleteTaskInfoMessage, WebReplyGetGanttDataMessage, WebReplyGetMyTaskListMessage, WebReplyGetSessionInfoMessage, WebReplyGetSyncTaskInfoMessage, WebReplyGetTasksInfoMessage, WebReplyGetUserNameMessage, WebReplyLoginMessage, WebReplyMemberMapMessage, WebReplyMessage, WebReplyRegisterMessage, WebReplyTaskProcessInfoUpdateMessage, WebReplyToDoJudgeMessage, WebReplyToDoStatusChangeMessage, WebReplyWSInitializeMessage}
 import Globals.GlobalVariables.userSystem
 import Plugins.CommonUtils.CommonTypes.JacksonSerializable
 import Plugins.MSUtils.AkkaBase.AkkaUtils.system
-import Tables.{ChatSessionInfo, ChatSessionInfoTable, MyTask, ProjectBasicInfo, ProjectCompleteInfo, ProjectInfoTable, SyncTask, TaskAddResult, TaskCompleteInfo, TaskInfoTable, TaskNewFromWeb, TaskProcessInfoTable, TaskToDoInfoTable, TaskWebProcessInfo, TaskWebToDoInfo, UserAccountTable, UserBasicInfo}
+import Tables.{ChatSessionInfo, ChatSessionInfoTable, GanttData, GanttTask, MyTask, ProjectBasicInfo, ProjectCompleteInfo, ProjectInfoTable, SyncTask, TaskAddResult, TaskCompleteInfo, TaskInfoTable, TaskNewFromWeb, TaskProcessInfoTable, TaskToDoInfoTable, TaskWebProcessInfo, TaskWebToDoInfo, UserAccountTable, UserBasicInfo}
 import akka.actor.typed.scaladsl.AskPattern.Askable
 import akka.actor.typed.{ActorRef, ActorSystem, Behavior}
 import akka.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors}
@@ -45,6 +45,8 @@ object UserWebRequestBehavior {
       new JsonSubTypes.Type(value = classOf[UserWebToDoStatusChangeMessage], name = "UserWebToDoStatusChangeMessage"),
       new JsonSubTypes.Type(value = classOf[UserWebProcessInfoUpdateMessage], name = "UserWebProcessInfoUpdateMessage"),
       new JsonSubTypes.Type(value = classOf[UserWebAddToDoMessage], name = "UserWebAddToDoMessage"),
+      new JsonSubTypes.Type(value = classOf[UserWebGetGanttDataMessage], name = "UserWebGetGanttDataMessage"),
+      new JsonSubTypes.Type(value = classOf[UserWebGanttDateChangeMessage], name = "UserWebGanttDateChangeMessage"),
     ))
   sealed trait UserWebCommand
   case class UserWebMessage(message: UserWebCommand, sender: ActorRef[StatusReply[WebReplyMessage]]) extends UserWebCommand with JacksonSerializable
@@ -68,6 +70,8 @@ object UserWebRequestBehavior {
   case class UserWebToDoStatusChangeMessage(taskToDoID: String, status: String, finishUserID: String) extends UserWebCommand with JacksonSerializable
   case class UserWebProcessInfoUpdateMessage(taskID: String, editUserID: String, content: String) extends UserWebCommand with JacksonSerializable
   case class UserWebAddToDoMessage(taskID: String, newToDo: TaskWebToDoInfo) extends UserWebCommand with JacksonSerializable
+  case class UserWebGetGanttDataMessage(projectID: String) extends UserWebCommand with JacksonSerializable
+  case class UserWebGanttDateChangeMessage(projectID: String, taskList: List[GanttTask]) extends UserWebCommand with JacksonSerializable
 
   @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
   @JsonSubTypes(
@@ -89,6 +93,8 @@ object UserWebRequestBehavior {
       new JsonSubTypes.Type(value = classOf[WebReplyToDoJudgeMessage], name = "WebReplyToDoJudgeMessage"),
       new JsonSubTypes.Type(value = classOf[WebReplyTaskProcessInfoUpdateMessage], name = "WebReplyTaskProcessInfoUpdateMessage"),
       new JsonSubTypes.Type(value = classOf[WebReplyAddToDoMessage], name = "WebReplyAddToDoMessage"),
+      new JsonSubTypes.Type(value = classOf[WebReplyGetGanttDataMessage], name = "WebReplyGetGanttDataMessage"),
+      new JsonSubTypes.Type(value = classOf[WebReplyGanttDateChangeMessage], name = "WebReplyGanttDateChangeMessage"),
     ))
   sealed trait WebReplyMessage
   case class WebReplyRegisterMessage(userID: String, reason: String, outcome: Boolean) extends WebReplyMessage with JacksonSerializable
@@ -110,6 +116,8 @@ object UserWebRequestBehavior {
   case class WebReplyToDoStatusChangeMessage(outcome: Boolean, endDate: String) extends WebReplyMessage with JacksonSerializable
   case class WebReplyTaskProcessInfoUpdateMessage(outcome: Boolean, newTaskProcessInfo: TaskWebProcessInfo) extends  WebReplyMessage with JacksonSerializable
   case class WebReplyAddToDoMessage(outcome: Boolean, newToDo: TaskWebToDoInfo) extends WebReplyMessage with JacksonSerializable
+  case class WebReplyGetGanttDataMessage(ganttData: GanttData) extends WebReplyMessage with JacksonSerializable
+  case class WebReplyGanttDateChangeMessage(outcome: Boolean, projectID: String) extends WebReplyMessage with JacksonSerializable
 
   def apply(): Behavior[UserWebCommand] = {
     Behaviors.setup(context =>
@@ -201,6 +209,13 @@ class UserWebRequestBehavior(context: ActorContext[UserWebCommand]) extends Abst
             Behaviors.stopped
           case UserWebAddToDoMessage(taskID, newToDo) =>
             ref ! StatusReply.success(WebReplyAddToDoMessage(outcome=true, TaskToDoInfoTable.addTaskToDoFromWeb(taskID, newToDo).get))
+            Behaviors.stopped
+          case UserWebGetGanttDataMessage(projectID) =>
+            ref ! StatusReply.success(WebReplyGetGanttDataMessage(ProjectInfoTable.getGanttData(projectID).get))
+            Behaviors.stopped
+          case UserWebGanttDateChangeMessage(projectID, taskList) =>
+            TaskInfoTable.updateGanttDateFromWeb(taskList)
+            ref ! StatusReply.success(WebReplyGanttDateChangeMessage(outcome = true, projectID = projectID))
             Behaviors.stopped
         }
     }

@@ -1,6 +1,7 @@
 package Tables
 
 import ActorModels.UserWebRequestBehavior.WebReplyGetCompleteProjectInfoMessage
+import Globals.GlobalUtils.convertDateTimeToWebString
 import Globals.{GlobalDBs, GlobalRules, GlobalUtils}
 import Plugins.CommonUtils.StringUtils
 import Plugins.MSUtils.CustomColumnTypes._
@@ -14,6 +15,8 @@ import scala.util.Try
 case class ProjectInfoRow(projectID: String, projectName: String, createUserID: String, description: String, startDate: DateTime, taskIDList: List[String], userIDList: List[String], sessionIDList: List[String])
 case class ProjectBasicInfo(projectID: String, projectName: String, createUserID: String, createUserName: String, description: String, startDate: String, userMap: Map[String, String])
 case class ProjectCompleteInfo(projectID: String, projectName: String, createUserID: String, createUserName: String, description: String, startDate: String, userMap: Map[String, String], sessionMap: Map[String, String], taskMap: Map[String, String])
+case class GanttData(projectID: String, projectName: String, startDate: String, allMemberMap: Map[String, String],taskList: List[GanttTask])
+
 
 class ProjectInfoTable(tag: Tag) extends Table[ProjectInfoRow](tag, GlobalDBs.kuibu_schema, _tableName = "project_info") {
   def projectID: Rep[String] = column[String]("project_id", O.PrimaryKey)
@@ -49,9 +52,9 @@ object ProjectInfoTable {
     ServiceUtils.exec(projectInfoTable.filter(_.projectID === projectID).exists.result)
   }
 
-  def addProjectWithID(projectID: String, projectName: String, createUserID: String, description: String, userIDList: List[String]): Try[Unit] = Try {
+  def addProjectWithID(projectID: String, projectName: String, createUserID: String, description: String, userIDList: List[String], startDate: DateTime = DateTime.now()): Try[Unit] = Try {
     ServiceUtils.exec(projectInfoTable += ProjectInfoRow(
-      projectID = projectID, projectName = projectName, createUserID = createUserID, description = description, startDate = DateTime.now(), taskIDList = List.empty[String], userIDList = userIDList, sessionIDList = List.empty[String]
+      projectID = projectID, projectName = projectName, createUserID = createUserID, description = description, startDate = startDate, taskIDList = List.empty[String], userIDList = userIDList, sessionIDList = List.empty[String]
     ))
     for(userID <- userIDList) {
       UserAccountTable.addProjectID(userID, projectID)
@@ -148,6 +151,19 @@ object ProjectInfoTable {
 
   def getProjectTaskIDList(projectID: String): Try[List[String]] = Try {
     ServiceUtils.exec(projectInfoTable.filter(_.projectID === projectID).map(_.taskIDList).result.head)
+  }
+
+  def getGanttData(projectID: String): Try[GanttData] = Try {
+    val projectInfo: ProjectInfoRow = ServiceUtils.exec(projectInfoTable.filter(_.projectID === projectID).result.head)
+    val allMemberMap: Map[String, String] = UserAccountTable.getUserNamesByIDs(projectInfo.userIDList).get
+    val ganttTaskList: List[GanttTask] = TaskInfoTable.getGanttTaskList(projectInfo.taskIDList).get
+    GanttData(
+      projectID = projectInfo.projectID,
+      projectName = projectInfo.projectName,
+      startDate = convertDateTimeToWebString(projectInfo.startDate),
+      allMemberMap = allMemberMap,
+      taskList = ganttTaskList
+    )
   }
 
 
